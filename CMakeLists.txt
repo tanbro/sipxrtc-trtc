@@ -29,6 +29,8 @@ set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 # 源文件列表
 set (SOURCES
   ${SRC_DIR}/main.cxx
+  ${SRC_DIR}/global.cxx
+  ${SRC_DIR}/Recorder.cxx
 )
 
 # 加构建目标: 可执行
@@ -58,5 +60,17 @@ target_link_libraries(${PROJECT_NAME} TRTCEngine)
 
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND cp -af "${TRTC_SDK_DIR}/lib/*" "${OUTDIR}/lib"
+    COMMAND mkdir -p ${OUTDIR}/lib && yes | cp -auv "${TRTC_SDK_DIR}/lib/libTRTCEngine.so" "${OUTDIR}/lib"
 )
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(${PROJECT_NAME} Threads::Threads)
+
+#
+# pkg_check_modules(LIBCRYPTO REQUIRED libcrypto)
+# target_link_libraries(${PROJECT_NAME} ${LIBCRYPTO_LDFLAGS})
+# target_include_directories(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_INCLUDE_DIRS})
+# target_compile_options(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_CFLAGS})
+# target_link_directories(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_LIBRARY_DIRS})
+# target_link_options(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_LDFLAGS_OTHER})
