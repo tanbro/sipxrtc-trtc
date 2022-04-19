@@ -20,6 +20,7 @@
 
 #include <TRTCCloud.h>
 
+#include "MixerCallback.hxx"
 #include "TrtcCallback.hxx"
 #include "def.hxx"
 
@@ -112,6 +113,10 @@ int main(int argc, char *argv[]) {
   TrtcCallback *trtcCallback = new TrtcCallback();
   trtc->setCallback(trtcCallback);
 
+  MixerCallback *mixerCallback = new MixerCallback();
+  mixer = createMediaMixer();
+  mixer->setCallback(mixerCallback);
+
   string line;
 
   cout << "输入房间号:";
@@ -136,10 +141,15 @@ int main(int argc, char *argv[]) {
     aud_read_cv.wait(lk);
     cout << "启动 Audio read 线程成功." << endl;
   }
+  cout << "启动 mixer" << endl;
+  mixer->start(true, false);
 
   printf("ctrl-c 退出\n");
   signal(SIGINT, sig_int_handler);
   while (running) {
     sleep(1);
   }
+
+  delete mixerCallback;
+  delete trtcCallback;
 }

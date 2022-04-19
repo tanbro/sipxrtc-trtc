@@ -1,5 +1,4 @@
 #include "global.hxx"
 
-ITRTCCloud *trtc;
-
-std::set<std::string> users;
+ITRTCCloud *trtc = nullptr;
+ITRTCMediaMixer *mixer = nullptr;

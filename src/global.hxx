@@ -1,12 +1,12 @@
 #ifndef __global_hxx__h__
-#define __global_hxx__h__
+#define __global_hxx__h__ 1
 
-#include <set>
 #include <string>
 
-#include <TRTCCloud.h>
+#include "ITRTCMediaMixer.h"
+#include "TRTCCloud.h"
 
 extern ITRTCCloud *trtc;
-extern std::set<std::string> users;
+extern ITRTCMediaMixer *mixer;
 
 #endif

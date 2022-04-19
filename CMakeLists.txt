@@ -30,7 +30,8 @@ set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 set (SOURCES
   ${SRC_DIR}/main.cxx
   ${SRC_DIR}/global.cxx
-  ${SRC_DIR}/Recorder.cxx
+  ${SRC_DIR}/Receiver.cxx
+  ${SRC_DIR}/MixerCallback.cxx
 )
 
 # 加构建目标: 可执行

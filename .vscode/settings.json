@@ -55,6 +55,9 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "hash_map": "cpp",
+        "cassert": "cpp",
+        "map": "cpp"
     }
 }

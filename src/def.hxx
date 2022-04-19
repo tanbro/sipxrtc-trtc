@@ -1,3 +1,6 @@
+#ifndef __sipxtrtc_def_h__
+#define __sipxtrtc_def_h__ 1
+
 #define TRTC_APP_ID 1400660208
 
 #define TRTC_SECRET_KEY                                                        \
@@ -11,3 +14,5 @@
   "sZZkJglyVjBS*jqU*ldMamvdmUFZ8vKGuOFLjvI86PM5L5Q612VSbF5LMj3B0slMd8_"
 
 #define SUA_UDS_FILE "/tmp/sipxrtp-sua.sock"
+
+#endif
