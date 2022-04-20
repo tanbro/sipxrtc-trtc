@@ -26,8 +26,6 @@
 #include "def.hxx"
 #include "global.hxx"
 
-#include "TencentSDKWapperMixRecord.h"
-
 using namespace std;
 
 static bool exiting = true;
@@ -140,23 +138,23 @@ int main(int argc, char *argv[]) {
   // wrapper.StartMixRecord(params, roomName.c_str(), 1, "./");
 
   {
-    std::lock_guard<std::mutex> lk(trtc_app_mutex);
+    lock_guard<mutex> lk(trtc_app_mutex);
 
     room = createInstance(TRTC_APP_ID);
     room->setCallback(&roomCallback);
     room->enterRoom(params, TRTCAppScene::TRTCAppSceneVideoCall);
 
-    std::cout << "启动 mixer ..." << std::endl;
+    cout << "启动 mixer ..." << endl;
     mixer = createMediaMixer();
     mixerCallback.open(RTC_UDS_FILE);
     mixer->setCallback(&mixerCallback);
     if (mixer != nullptr) {
       int errCode = mixer->start(true, false);
       if (errCode) {
-        std::cerr << "!启动 mixer 失败 (" << errCode << ")" << std::endl;
+        cerr << "!启动 mixer 失败 (" << errCode << ")" << endl;
         return -1;
       } else {
-        std::cout << "启动 mixer 成功" << std::endl;
+        cout << "启动 mixer 成功" << endl;
       }
     }
   }
@@ -166,7 +164,7 @@ int main(int argc, char *argv[]) {
   // getline(cin, line);
   // {
   //   cout << "启动 SUA 放音线程 ..." << endl;
-  //   std::unique_lock<mutex> lk(mtx_play_sua);
+  //   unique_lock<mutex> lk(mtx_play_sua);
   //   trd_play_sua = thread(fn_play_sua, sua_sock_path);
   //   cv_play_sua.wait(lk);
   //   cout << "启动 SUA 放音线程成功." << endl;

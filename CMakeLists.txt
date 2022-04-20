@@ -69,11 +69,3 @@ add_custom_command(
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
-
-#
-# pkg_check_modules(LIBCRYPTO REQUIRED libcrypto)
-# target_link_libraries(${PROJECT_NAME} ${LIBCRYPTO_LDFLAGS})
-# target_include_directories(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_INCLUDE_DIRS})
-# target_compile_options(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_CFLAGS})
-# target_link_directories(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_LIBRARY_DIRS})
-# target_link_options(${PROJECT_NAME} PRIVATE ${LIBCRYPTO_LDFLAGS_OTHER})
