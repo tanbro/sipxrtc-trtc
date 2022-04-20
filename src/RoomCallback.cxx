@@ -13,7 +13,8 @@
 
 using namespace std;
 
-static Region dummy_region{0, 0, 0, 0, 0, REGION_OPTION_FILLMODE_FULL, 0};
+static Region dummy_region{
+    0, 0, 0, 0, 0, RegionOption::REGION_OPTION_FILLMODE_FULL, 0};
 
 void RoomCallback::onError(TXLiteAVError errCode, const char *errMsg,
                            void *arg) {
