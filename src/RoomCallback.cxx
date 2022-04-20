@@ -39,41 +39,59 @@ void RoomCallback::onExitRoom(int reason) {
 };
 
 void RoomCallback::onUserEnter(const char *userId) {
-  cerr << "[INFO   ] User " << userId << " entered the room" << endl;
-
-  int err;
+  int trtc_errno;
   {
     lock_guard<mutex> lk(trtc_app_mutex);
     /// IMPORTANT: 经测试，如果不设置该用户的视频混流 Region，则 MediaMixer
     /// 无法接受音频输入数据报
     if (mixer != nullptr) {
-      mixer->setRegion(userId, &dummy_region);
-      mixer->applyRegions();
+      if ((trtc_errno = mixer->setRegion(userId, &dummy_region))) {
+        ostringstream oss;
+        oss << "ITRTCMediaMixer::setRegion(\"" << userId << "\", "
+            << &dummy_region << ") error " << trtc_errno;
+        throw new runtime_error(oss.str());
+      }
+      if ((trtc_errno = mixer->applyRegions())) {
+        ostringstream oss;
+        oss << "ITRTCMediaMixer::applyRegions() error " << trtc_errno;
+        throw new runtime_error(oss.str());
+      }
     }
-    err = room->setRemoteAudioRecvCallback(
-        userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM,
-        &audRecvCallback);
-  }
-  if (err) {
-    ostringstream oss;
-    oss << "ITRTCCloud::setRemoteAudioRecvCallback() error " << err;
-    cerr << oss.str() << endl;
-    throw new runtime_error(oss.str());
+    if ((trtc_errno = room->setRemoteAudioRecvCallback(
+             userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM,
+             &audRecvCallback))) {
+      ostringstream oss;
+      oss << "ITRTCCloud::setRemoteAudioRecvCallback(\"" << userId << "\", "
+          << &audRecvCallback << ") error " << trtc_errno;
+      throw new runtime_error(oss.str());
+    }
   }
 }
 
 void RoomCallback::onUserExit(const char *userId, int reason) {
-  cerr << "[INFO   ] User " << userId << " exited the room" << endl;
-  int err;
+  int trtc_errno;
   {
     lock_guard<mutex> lk(trtc_app_mutex);
-    err = room->setRemoteAudioRecvCallback(
-        userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown, NULL);
-  }
-  if (err) {
-    ostringstream oss;
-    oss << "ITRTCCloud::setRemoteAudioRecvCallback() error " << err;
-    cerr << oss.str() << endl;
-    throw new runtime_error(oss.str());
+    if ((trtc_errno = room->setRemoteAudioRecvCallback(
+             userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown,
+             nullptr))) {
+      ostringstream oss;
+      oss << "ITRTCCloud::setRemoteAudioRecvCallback(\"" << userId
+          << "\", nullptr) error " << trtc_errno;
+      throw new runtime_error(oss.str());
+    }
+    if (mixer != nullptr) {
+      if ((trtc_errno = mixer->setRegion(userId, nullptr))) {
+        ostringstream oss;
+        oss << "ITRTCMediaMixer::setRegion(\"" << userId
+            << "\", nullptr) error " << trtc_errno;
+        throw new runtime_error(oss.str());
+      }
+      if ((trtc_errno = mixer->applyRegions())) {
+        ostringstream oss;
+        oss << "ITRTCMediaMixer::applyRegions() error " << trtc_errno;
+        throw new runtime_error(oss.str());
+      }
+    }
   }
 }

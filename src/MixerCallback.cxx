@@ -21,13 +21,13 @@ void MixerCallback::open(const string &path) {
   sendto_addr.sun_family = AF_UNIX;
   strncpy(sendto_addr.sun_path, path.c_str(), sizeof(sendto_addr.sun_path) - 1);
   sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-  if (sockfd < 0) {
+  if (sockfd == -1) {
     throw new system_error(errno, generic_category());
   }
 }
 
 void MixerCallback::close() {
-  if (sockfd >= 0) {
+  if (sockfd != -1) {
     if (::close(sockfd)) {
       throw new system_error(errno, generic_category());
     }
@@ -35,23 +35,16 @@ void MixerCallback::close() {
   }
 }
 
-bool MixerCallback::opened() { return (!sockfd < 0); }
+bool MixerCallback::opened() { return (sockfd != -1); }
 
 void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
-  // onMixedAudioFrame 和 onMixedVideoFrame 回调不用加锁，是因为mixer
-  // stop调用会join 混流线程的退出。mixer的stop 返回意味着mixer
-  // 不再调用上面两个回调了。
-  // cout << "onMixedAudioFrame ... " << endl;
-  if (sockfd < 0) {
+  if (sockfd == -1) {
     return;
   }
-  // cout << "onMixedAudioFrame ... send() ... addr=" << sendto_addr.sun_path
-  //      << endl;
-  ssize_t number_sent =
+  ssize_t n_bytes =
       sendto(sockfd, frame->data, frame->length, 0,
              (struct sockaddr *)&sendto_addr, sizeof(sendto_addr));
-  // cout << "onMixedAudioFrame ... send() -> " << number_sent << endl;
-  if (number_sent < 0) {
+  if (n_bytes == -1) {
     switch (errno) {
     case ENOENT:
       break;
@@ -69,7 +62,6 @@ void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
  */
 void MixerCallback::onError(int errcode, char *errmsg) {
   ostringstream oss;
-  oss << "ITRTCMediaMixer internal error (" << errcode << ") " << errmsg;
-  cerr << oss.str() << endl;
+  oss << "ITRTCMediaMixer internal error " << errcode << ": " << errmsg;
   throw new runtime_error(oss.str());
 }

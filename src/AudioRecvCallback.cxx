@@ -11,21 +11,16 @@ using namespace std;
 
 void AudioRecvCallback::onRecvAudioFrame(const char *userId,
                                          TRTCAudioFrame *frame) {
-  // std::cout << "onRecvAudioFrame ... 0" << std::endl;
-  lock_guard<std::mutex> lk(trtc_app_mutex);
+  int trtc_errno;
+  // assert(frame->sampleRate == 48000);
+  // assert(frame->channel == 1);
+  // assert(frame->length == 1920);
 
-  assert(frame->sampleRate == 48000);
-  assert(frame->channel == 1);
-  assert(frame->length == 1920);
-
-  int err;
   if (mixer != nullptr) {
-    // std::cout << ">>> mixer->addAudioFrame()" << std::endl;
-    if ((err = mixer->addAudioFrame(userId, frame))) {
-      std::ostringstream oss;
-      oss << "TXLiteAVSDK error on ITRTCMediaMixer::addAudioFrame. error_code="
-          << err;
-      cerr << oss.str() << endl;
+    lock_guard<std::mutex> lk(trtc_app_mutex);
+    if ((trtc_errno = mixer->addAudioFrame(userId, frame))) {
+      ostringstream oss;
+      oss << "ITRTCMediaMixer::addAudioFrame() error " << trtc_errno;
       throw new runtime_error(oss.str());
     }
   }
