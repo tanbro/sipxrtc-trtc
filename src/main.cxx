@@ -18,27 +18,29 @@
 #include <mutex>
 #include <thread>
 
-#include <TRTCCloud.h>
+#include "TRTCCloud.h"
 
+#include "LogCallback.hxx"
 #include "MixerCallback.hxx"
-#include "TrtcCallback.hxx"
+#include "RoomCallback.hxx"
 #include "def.hxx"
+#include "global.hxx"
+
+#include "TencentSDKWapperMixRecord.h"
 
 using namespace std;
 
-static bool running = true;
+static bool exiting = true;
 
-static void sig_int_handler(int dummy) { running = false; }
+static void sig_int_handler(int dummy) { exiting = true; }
 static bool is_file(const char *);
 
-static void cap_bridge_worker();
+int fd_play_sua = -1;
+thread trd_play_sua;
+mutex mtx_play_sua;
+condition_variable cv_play_sua;
 
-int aud_read_sockfd = -1;
-thread aud_read_trd;
-mutex aud_read_mtx;
-condition_variable aud_read_cv;
-
-void aud_read(const char *path) {
+void fn_play_sua(const char *path) {
   if (is_file(path)) {
     if (unlink(path)) {
       fprintf(stderr, "FATAL! unlink() error %d: %s", errno, strerror(errno));
@@ -50,13 +52,12 @@ void aud_read(const char *path) {
   recv_addr.sun_family = AF_LOCAL;
   strncpy(recv_addr.sun_path, path, sizeof(recv_addr.sun_path) - 1);
 
-  aud_read_sockfd = socket(AF_LOCAL, SOCK_DGRAM, 0);
-  if (aud_read_sockfd == -1) {
+  fd_play_sua = socket(AF_LOCAL, SOCK_DGRAM, 0);
+  if (fd_play_sua == -1) {
     fprintf(stderr, "FATAL! socket() returns %d: %s", errno, strerror(errno));
   }
 
-  if (bind(aud_read_sockfd, (const sockaddr *)(&recv_addr),
-           sizeof(recv_addr))) {
+  if (bind(fd_play_sua, (const sockaddr *)(&recv_addr), sizeof(recv_addr))) {
     fprintf(stderr, "FATAL! bind() error %d: %s", errno, strerror(errno));
   }
 
@@ -71,11 +72,11 @@ void aud_read(const char *path) {
   uint8_t *buffer = (uint8_t *)malloc(bytes_per_frame * sizeof(uint8_t));
 
   // 标记启动成功
-  aud_read_cv.notify_all();
+  cv_play_sua.notify_all();
 
   // 死循环接收
   while (1) {
-    ssize_t length = recv(aud_read_sockfd, buffer, bytes_per_frame, 0);
+    ssize_t length = recv(fd_play_sua, buffer, bytes_per_frame, 0);
     if (length == -1) {
       fprintf(stderr, "FATAL! recv() error %d: %s", errno, strerror(errno));
       break;
@@ -85,7 +86,7 @@ void aud_read(const char *path) {
     // printf("收到 Audio 数据 %ld bytes\n", length);
     af->data = buffer;
     af->length = length;
-    int trtc_err = trtc->sendCustomAudioData(af);
+    int trtc_err = room->sendCustomAudioData(af);
     if (trtc_err) {
       fprintf(stderr, "FATAL! sendCustomAudioData() error %d\n", trtc_err);
       break;
@@ -109,47 +110,84 @@ int main(int argc, char *argv[]) {
   string userid = TRTC_USER_ID;
   string usersig = TRTC_USER_SIG;
 
-  trtc = createInstance(TRTC_APP_ID);
-  TrtcCallback *trtcCallback = new TrtcCallback();
-  trtc->setCallback(trtcCallback);
-
-  MixerCallback *mixerCallback = new MixerCallback();
-  mixer = createMediaMixer();
-  mixer->setCallback(mixerCallback);
-
+  int errCode;
   string line;
+
+  // setLogDirPath("logs");
+  /**
+   * 如果不想控制台输出SDK日志，请使用 setConsoleEnabled(false)
+   */
+  setConsoleEnabled(false);
+
+  setLogLevel(TRTCLogLevel::TRTCLogLevelWarn);
+  setLogCallback(&logCallback);
 
   cout << "输入房间号:";
   getline(cin, line);
-  unsigned room_id = atoi(line.c_str());
+  string roomName = line.c_str();
+  TRTCParams params;
+  params.sdkAppId = TRTC_APP_ID;
+  params.roomId = stol(roomName);
+  params.userId = userid;
+  params.userSig = usersig;
+  // 主播角色，即可以发送本地音视频到远端，也可以接收远端的音视频到本地
+  // params.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
+  // 【必须?】 观众角色
+  params.clientRole = TRTCClientRole::TRTCClientRole_Audience;
+
+  // TencentSDKWarperMixRecord wrapper(TRTC_APP_ID);
+  // // 位控制：纯音频 1 纯视频 2 音视频 4
+  // wrapper.StartMixRecord(params, roomName.c_str(), 1, "./");
+
   {
-    TRTCParams *params = new TRTCParams();
-    params->sdkAppId = TRTC_APP_ID;
-    params->roomId = room_id;
-    params->userId = userid;
-    params->userSig = usersig;
-    trtc->enterRoom(*params, TRTCAppScene::TRTCAppSceneVideoCall);
+    std::lock_guard<std::mutex> lk(trtc_app_mutex);
+
+    room = createInstance(TRTC_APP_ID);
+    room->setCallback(&roomCallback);
+    room->enterRoom(params, TRTCAppScene::TRTCAppSceneVideoCall);
+
+    std::cout << "启动 mixer ..." << std::endl;
+    mixer = createMediaMixer();
+    mixerCallback.open(RTC_UDS_FILE);
+    mixer->setCallback(&mixerCallback);
+    if (mixer != nullptr) {
+      int errCode = mixer->start(true, false);
+      if (errCode) {
+        std::cerr << "!启动 mixer 失败 (" << errCode << ")" << std::endl;
+        return -1;
+      } else {
+        std::cout << "启动 mixer 成功" << std::endl;
+      }
+    }
   }
 
-  cout << "如果已经进入了房间，按“回车”启动 Audio read 线程 (Enter):";
-  char sua_sock_path[] = SUA_UDS_FILE;
-  getline(cin, line);
-  {
-    cout << "启动 Audio read 线程 ..." << endl;
-    std::unique_lock<mutex> lk(aud_read_mtx);
-    aud_read_trd = thread(aud_read, sua_sock_path);
-    aud_read_cv.wait(lk);
-    cout << "启动 Audio read 线程成功." << endl;
-  }
-  cout << "启动 mixer" << endl;
-  mixer->start(true, false);
+  // cout << "如果已经进入了房间，按“回车”启动 SUA 放音线程 (Enter):";
+  // char sua_sock_path[] = SUA_UDS_FILE;
+  // getline(cin, line);
+  // {
+  //   cout << "启动 SUA 放音线程 ..." << endl;
+  //   std::unique_lock<mutex> lk(mtx_play_sua);
+  //   trd_play_sua = thread(fn_play_sua, sua_sock_path);
+  //   cv_play_sua.wait(lk);
+  //   cout << "启动 SUA 放音线程成功." << endl;
+  // }
 
   printf("ctrl-c 退出\n");
+  bool exiting = false;
   signal(SIGINT, sig_int_handler);
-  while (running) {
+  while (!exiting) {
     sleep(1);
   }
 
-  delete mixerCallback;
-  delete trtcCallback;
+  // wrapper.StopMixRecord();
+
+  if (mixer != nullptr) {
+    mixer->setCallback(nullptr);
+    mixer->stop();
+    destroyMediaMixer(mixer);
+  }
+  if (room != nullptr) {
+    room->setCallback(nullptr);
+    destroyInstance(room);
+  }
 }

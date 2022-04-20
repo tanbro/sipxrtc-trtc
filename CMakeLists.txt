@@ -30,8 +30,10 @@ set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 set (SOURCES
   ${SRC_DIR}/main.cxx
   ${SRC_DIR}/global.cxx
-  ${SRC_DIR}/Receiver.cxx
+  ${SRC_DIR}/RoomCallback.cxx
+  ${SRC_DIR}/AudioRecvCallback.cxx
   ${SRC_DIR}/MixerCallback.cxx
+  ${SRC_DIR}/LogCallback.cxx
 )
 
 # 加构建目标: 可执行
@@ -58,12 +60,12 @@ set(TRTC_SDK_DIR ${CMAKE_CURRENT_LIST_DIR}/SDKs/trtc_7.9.54)
 target_include_directories(${PROJECT_NAME} PRIVATE ${TRTC_SDK_DIR}/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${TRTC_SDK_DIR}/lib)
 target_link_libraries(${PROJECT_NAME} TRTCEngine)
-
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND mkdir -p ${OUTDIR}/lib && yes | cp -auv "${TRTC_SDK_DIR}/lib/libTRTCEngine.so" "${OUTDIR}/lib"
 )
 
+# TRTC SDK Requires pthread
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} Threads::Threads)

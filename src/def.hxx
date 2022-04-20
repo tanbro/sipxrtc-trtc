@@ -14,5 +14,6 @@
   "sZZkJglyVjBS*jqU*ldMamvdmUFZ8vKGuOFLjvI86PM5L5Q612VSbF5LMj3B0slMd8_"
 
 #define SUA_UDS_FILE "/tmp/sipxrtp-sua.sock"
+#define RTC_UDS_FILE "/tmp/sipxrtp-trtc.sock"
 
 #endif

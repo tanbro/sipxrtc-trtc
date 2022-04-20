@@ -58,6 +58,7 @@
         "set": "cpp",
         "hash_map": "cpp",
         "cassert": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "cerrno": "cpp"
     }
 }

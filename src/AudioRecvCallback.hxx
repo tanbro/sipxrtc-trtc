@@ -1,17 +1,12 @@
 #ifndef __sipxtrtc_Recorder_h__
 #define __sipxtrtc_Recorder_h__ 1
 
-#include <sys/un.h>
-
 #include "TRTCCloud.h"
 
-class Receiver : public ITRTCAudioRecvCallback {
-private:
-
-
+class AudioRecvCallback : public ITRTCAudioRecvCallback {
 public:
-  Receiver();
-  ~Receiver();
+  AudioRecvCallback(){};
+  virtual ~AudioRecvCallback(){};
 
   /// @name 自定义音频帧接收回调
   /// @{
@@ -22,8 +17,6 @@ public:
    * \param frame      音频帧数据
    */
   void onRecvAudioFrame(const char *userId, TRTCAudioFrame *frame);
-
-  static Receiver *getInstance();
 };
 
 #endif
