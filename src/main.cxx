@@ -129,20 +129,13 @@ int main(int argc, char *argv[]) {
   params.userId = userid;
   params.userSig = usersig;
   // 主播角色，即可以发送本地音视频到远端，也可以接收远端的音视频到本地
-  // params.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
-  // 【必须?】 观众角色
-  params.clientRole = TRTCClientRole::TRTCClientRole_Audience;
-
-  // TencentSDKWarperMixRecord wrapper(TRTC_APP_ID);
-  // // 位控制：纯音频 1 纯视频 2 音视频 4
-  // wrapper.StartMixRecord(params, roomName.c_str(), 1, "./");
+  params.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
 
   {
     lock_guard<mutex> lk(trtc_app_mutex);
 
     room = createInstance(TRTC_APP_ID);
     room->setCallback(&roomCallback);
-    room->enterRoom(params, TRTCAppScene::TRTCAppSceneVideoCall);
 
     cout << "启动 mixer ..." << endl;
     mixer = createMediaMixer();
@@ -157,6 +150,8 @@ int main(int argc, char *argv[]) {
         cout << "启动 mixer 成功" << endl;
       }
     }
+
+    room->enterRoom(params, TRTCAppScene::TRTCAppSceneVideoCall);
   }
 
   // cout << "如果已经进入了房间，按“回车”启动 SUA 放音线程 (Enter):";
@@ -180,7 +175,6 @@ int main(int argc, char *argv[]) {
   // wrapper.StopMixRecord();
 
   if (mixer != nullptr) {
-    mixer->setCallback(nullptr);
     mixer->stop();
     destroyMediaMixer(mixer);
   }

@@ -18,15 +18,13 @@ void AudioRecvCallback::onRecvAudioFrame(const char *userId,
   assert(frame->channel == 1);
   assert(frame->length == 1920);
 
-  int errcode;
+  int err;
   if (mixer != nullptr) {
     // std::cout << ">>> mixer->addAudioFrame()" << std::endl;
-    errcode = mixer->addAudioFrame(userId, frame);
-    // std::cout << "<<< mixer->addAudioFrame()" << std::endl;
-    if (errcode) {
+    if ((err = mixer->addAudioFrame(userId, frame))) {
       std::ostringstream oss;
       oss << "TXLiteAVSDK error on ITRTCMediaMixer::addAudioFrame. error_code="
-          << errcode;
+          << err;
       cerr << oss.str() << endl;
       throw new runtime_error(oss.str());
     }

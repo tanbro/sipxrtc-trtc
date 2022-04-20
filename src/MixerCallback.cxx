@@ -37,11 +37,10 @@ void MixerCallback::close() {
 
 bool MixerCallback::opened() { return (!sockfd < 0); }
 
-/**
- * onMixedAudioFrame 和 onMixedVideoFrame 回调不用加锁，是因为mixer
- * stop调用会join 混流线程的退出。mixer的stop 返回意味着mixer
- */
 void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
+  // onMixedAudioFrame 和 onMixedVideoFrame 回调不用加锁，是因为mixer
+  // stop调用会join 混流线程的退出。mixer的stop 返回意味着mixer
+  // 不再调用上面两个回调了。
   // cout << "onMixedAudioFrame ... " << endl;
   if (sockfd < 0) {
     return;
@@ -58,26 +57,19 @@ void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
       break;
     case ECONNREFUSED:
       break;
-    default: {
+    default:
       throw new system_error(errno, generic_category());
-    } break;
+      break;
     }
   }
 }
-
-// /**
-//  * \brief 1.2 回调混流后的视频帧，视频格式YUV420p。
-//  * \param  frame 混后的视频帧。
-//  * \return void.
-//  */
-// void MixerCallback::onMixedVideoFrame(TRTCVideoFrame *frame) {}
 
 /**
  * \brief 1.3 内部错误回调。
  */
 void MixerCallback::onError(int errcode, char *errmsg) {
   ostringstream oss;
-  oss << "ITRTCMediaMixer error (" << errcode << ") " << errmsg;
+  oss << "ITRTCMediaMixer internal error (" << errcode << ") " << errmsg;
   cerr << oss.str() << endl;
   throw new runtime_error(oss.str());
 }

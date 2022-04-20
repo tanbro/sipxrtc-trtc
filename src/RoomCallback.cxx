@@ -13,6 +13,8 @@
 
 using namespace std;
 
+static Region dummy_region{0, 0, 0, 0, 0, REGION_OPTION_FILLMODE_FULL, 0};
+
 void RoomCallback::onError(TXLiteAVError errCode, const char *errMsg,
                            void *arg) {
   ostringstream oss;
@@ -32,30 +34,22 @@ void RoomCallback::onEnterRoom(uint64_t elapsed) {
 };
 
 void RoomCallback::onExitRoom(int reason) {
+  /// TODO: 然后呢！
   cout << "[WARNING] onExitRoom: reason=" << reason << endl;
-  lock_guard<mutex> lk(trtc_app_mutex);
-  for (auto ptrUserId = userList.begin(); ptrUserId != userList.end();
-       ++ptrUserId) {
-    room->setRemoteAudioRecvCallback(
-        ptrUserId->c_str(), TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown,
-        NULL);
-  }
-  userList.clear();
 };
 
 void RoomCallback::onUserEnter(const char *userId) {
   cerr << "[INFO   ] User " << userId << " entered the room" << endl;
 
-  Region region{0, 0, 0, 0, 0, REGION_OPTION_FILLMODE_FULL, 0};
   int err;
-
   {
     lock_guard<mutex> lk(trtc_app_mutex);
+    /// IMPORTANT: 经测试，如果不设置该用户的视频混流 Region，则 MediaMixer
+    /// 无法接受音频输入数据报
     if (mixer != nullptr) {
-      mixer->setRegion(userId, &region);
+      mixer->setRegion(userId, &dummy_region);
       mixer->applyRegions();
     }
-    userList.insert(userId);
     err = room->setRemoteAudioRecvCallback(
         userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM,
         &audRecvCallback);
@@ -73,7 +67,6 @@ void RoomCallback::onUserExit(const char *userId, int reason) {
   int err;
   {
     lock_guard<mutex> lk(trtc_app_mutex);
-    userList.erase(userId);
     err = room->setRemoteAudioRecvCallback(
         userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown, NULL);
   }

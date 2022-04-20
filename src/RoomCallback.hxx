@@ -2,8 +2,6 @@
 #define __sipxtrtc_RoomCallback_h__ 1
 
 #include <iostream>
-#include <set>
-#include <string>
 
 #include "ITRTCMediaMixer.h"
 #include "TRTCCloud.h"
@@ -21,10 +19,6 @@ public:
   void onUserEnter(const char *userId);
   void onUserExit(const char *userId, int reason);
 
-  const std::set<std::string> getUserList() { return userList; };
-
-private:
-  std::set<std::string> userList;
 };
 
 #endif
