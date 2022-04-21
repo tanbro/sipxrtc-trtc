@@ -1,4 +1,4 @@
-#include "MixerCallback.hxx"
+#include "MixerCallback.hh"
 
 #include <unistd.h>
 

@@ -1,11 +1,11 @@
-#include "AudioRecvCallback.hxx"
+#include "AudioRecvCallback.hh"
 
 #include <cassert>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 
-#include "global.hxx"
+#include "global.hh"
 
 using namespace std;
 

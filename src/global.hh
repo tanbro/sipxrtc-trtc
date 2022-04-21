@@ -8,11 +8,11 @@
 #include "ITRTCMediaRecorder.h"
 #include "TRTCCloud.h"
 
-#include "AudioRecvCallback.hxx"
-#include "LogCallback.hxx"
-#include "MixerCallback.hxx"
-#include "RecorderCallback.hxx"
-#include "RoomCallback.hxx"
+#include "AudioRecvCallback.hh"
+#include "LogCallback.hh"
+#include "MixerCallback.hh"
+#include "RecorderCallback.hh"
+#include "RoomCallback.hh"
 
 extern std::mutex trtc_app_mutex;
 extern ITRTCCloud *room;

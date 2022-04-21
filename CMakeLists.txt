@@ -28,12 +28,12 @@ string(TOLOWER ${CMAKE_CXX_COMPILER_ID} CXX_COMPILER_ID_LOWERCASE)
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 # 源文件列表
 set (SOURCES
-  ${SRC_DIR}/main.cxx
-  ${SRC_DIR}/global.cxx
-  ${SRC_DIR}/RoomCallback.cxx
-  ${SRC_DIR}/AudioRecvCallback.cxx
-  ${SRC_DIR}/MixerCallback.cxx
-  ${SRC_DIR}/LogCallback.cxx
+  ${SRC_DIR}/main.cc
+  ${SRC_DIR}/global.cc
+  ${SRC_DIR}/RoomCallback.cc
+  ${SRC_DIR}/AudioRecvCallback.cc
+  ${SRC_DIR}/MixerCallback.cc
+  ${SRC_DIR}/LogCallback.cc
 )
 
 # 加构建目标: 可执行

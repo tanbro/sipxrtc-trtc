@@ -20,11 +20,11 @@
 
 #include "TRTCCloud.h"
 
-#include "LogCallback.hxx"
-#include "MixerCallback.hxx"
-#include "RoomCallback.hxx"
-#include "def.hxx"
-#include "global.hxx"
+#include "LogCallback.hh"
+#include "MixerCallback.hh"
+#include "RoomCallback.hh"
+#include "def.hh"
+#include "global.hh"
 
 using namespace std;
 

@@ -1,4 +1,4 @@
-#include "global.hxx"
+#include "global.hh"
 
 std::mutex trtc_app_mutex;
 

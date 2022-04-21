@@ -1,5 +1,5 @@
 
-#include "RoomCallback.hxx"
+#include "RoomCallback.hh"
 
 #include <cassert>
 #include <iostream>
@@ -8,8 +8,8 @@
 #include <string>
 #include <thread>
 
-#include "AudioRecvCallback.hxx"
-#include "global.hxx"
+#include "AudioRecvCallback.hh"
+#include "global.hh"
 
 using namespace std;
 

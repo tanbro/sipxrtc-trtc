@@ -1,4 +1,4 @@
-#include "LogCallback.hxx"
+#include "LogCallback.hh"
 
 #include <iostream>
 #include <sstream>
