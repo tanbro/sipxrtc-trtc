@@ -9,6 +9,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -18,11 +19,15 @@
 #include <mutex>
 #include <thread>
 
+#include <gflags/gflags.h>
+#include <glog/logging.h>
+
 #include "TRTCCloud.h"
 
 #include "LogCallback.hh"
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
+#include "UdsAudioReader.hh"
 #include "def.hh"
 #include "global.hh"
 
@@ -31,79 +36,10 @@ using namespace std;
 static bool exiting = true;
 
 static void sig_int_handler(int dummy) { exiting = true; }
-static bool is_file(const char *);
-
-int fd_play_sua = -1;
-thread trd_play_sua;
-mutex mtx_play_sua;
-condition_variable cv_play_sua;
-
-void fn_play_sua(const char *path) {
-  if (is_file(path)) {
-    if (unlink(path)) {
-      fprintf(stderr, "FATAL! unlink() error %d: %s", errno, strerror(errno));
-    }
-  }
-
-  sockaddr_un recv_addr;
-  memset(&recv_addr, 0, sizeof(sockaddr_un));
-  recv_addr.sun_family = AF_LOCAL;
-  strncpy(recv_addr.sun_path, path, sizeof(recv_addr.sun_path) - 1);
-
-  fd_play_sua = socket(AF_LOCAL, SOCK_DGRAM, 0);
-  if (fd_play_sua == -1) {
-    fprintf(stderr, "FATAL! socket() returns %d: %s", errno, strerror(errno));
-  }
-
-  if (bind(fd_play_sua, (const sockaddr *)(&recv_addr), sizeof(recv_addr))) {
-    fprintf(stderr, "FATAL! bind() error %d: %s", errno, strerror(errno));
-  }
-
-  TRTCAudioFrame *af = new TRTCAudioFrame();
-  af->audioFormat = TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM;
-
-  size_t msecs_per_frame = 20;
-  size_t bits_per_sample = 16;
-  size_t bytes_per_frame = af->sampleRate * af->channel * msecs_per_frame /
-                           1000 * bits_per_sample / sizeof(uint8_t) / 8;
-  assert(bytes_per_frame == 1920);
-  uint8_t *buffer = (uint8_t *)malloc(bytes_per_frame * sizeof(uint8_t));
-
-  // 标记启动成功
-  cv_play_sua.notify_all();
-
-  // 死循环接收
-  while (1) {
-    ssize_t length = recv(fd_play_sua, buffer, bytes_per_frame, 0);
-    if (length == -1) {
-      fprintf(stderr, "FATAL! recv() error %d: %s", errno, strerror(errno));
-      break;
-    }
-    assert(length == bytes_per_frame);
-    //
-    // printf("收到 Audio 数据 %ld bytes\n", length);
-    af->data = buffer;
-    af->length = length;
-    int trtc_err = room->sendCustomAudioData(af);
-    if (trtc_err) {
-      fprintf(stderr, "FATAL! sendCustomAudioData() error %d\n", trtc_err);
-      break;
-    }
-  }
-
-  free(af);
-  free(buffer);
-}
-
-bool is_file(const char *pathname) {
-  struct stat statbuf;
-  int ret = stat(pathname, &statbuf);
-  if (ret)
-    return false;
-  return true;
-}
 
 int main(int argc, char *argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  google::InitGoogleLogging(argv[0]);
 
   string userid = TRTC_USER_ID;
   string usersig = TRTC_USER_SIG;
@@ -117,8 +53,8 @@ int main(int argc, char *argv[]) {
    */
   setConsoleEnabled(false);
 
-  setLogLevel(TRTCLogLevel::TRTCLogLevelWarn);
-  setLogCallback(&logCallback);
+  // setLogLevel(TRTCLogLevel::TRTCLogLevelWarn);
+  // setLogCallback(&logCallback);
 
   cout << "输入房间号:";
   getline(cin, line);
@@ -154,25 +90,37 @@ int main(int argc, char *argv[]) {
     room->enterRoom(params, TRTCAppScene::TRTCAppSceneVideoCall);
   }
 
-  // cout << "如果已经进入了房间，按“回车”启动 SUA 放音线程 (Enter):";
-  // char sua_sock_path[] = SUA_UDS_FILE;
-  // getline(cin, line);
-  // {
-  //   cout << "启动 SUA 放音线程 ..." << endl;
-  //   unique_lock<mutex> lk(mtx_play_sua);
-  //   trd_play_sua = thread(fn_play_sua, sua_sock_path);
-  //   cv_play_sua.wait(lk);
-  //   cout << "启动 SUA 放音线程成功." << endl;
-  // }
+  DVLOG(3) << "等待进入房间 ...";
+  while (!roomCallback.getEntered()) {
+    this_thread::sleep_for(chrono::milliseconds(100));
+  }
+  DVLOG(3) << "已经进入房间!";
 
-  printf("ctrl-c 退出\n");
+  pollfd fds;
+  nfds_t nfds = 1;
+  fds.events = POLLIN;
+
+  DVLOG(1) << "打开 udsAudioReader";
+  UdsAudioReader audReader(SUA_UDS_FILE);
+  fds.fd = audReader.open();
+
   bool exiting = false;
   signal(SIGINT, sig_int_handler);
+  printf("ctrl-c 退出\n");
   while (!exiting) {
-    sleep(1);
+    DVLOG(6) << "poll() ...";
+    int rc;
+    CHECK_ERR(rc = poll(&fds, 1, 1000));
+    DVLOG(6) << "poll() returns " << rc;
+    if (rc == 0) {
+      /// Timeout
+      continue;
+    }
+    ///
+    audReader.runOnce();
   }
 
-  // wrapper.StopMixRecord();
+  audReader.close();
 
   if (mixer != nullptr) {
     mixer->stop();

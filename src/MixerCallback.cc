@@ -4,38 +4,32 @@
 
 #include <sys/socket.h>
 
-#include <cerrno>
-#include <iostream>
 #include <sstream>
-#include <stdexcept>
-#include <system_error>
+
+#include <glog/logging.h>
 
 using namespace std;
 
 void MixerCallback::open(const string &path) {
-  if (!sockfd < 0) {
-    cerr << "already opened" << endl;
-    return;
-  }
-  memset(&sendto_addr, 0, sizeof(sendto_addr));
+  CHECK_GT(0, sockfd);
+  CHECK_NOTNULL(memset(&sendto_addr, 0, sizeof(sendto_addr)));
   sendto_addr.sun_family = AF_UNIX;
   strncpy(sendto_addr.sun_path, path.c_str(), sizeof(sendto_addr.sun_path) - 1);
-  sockfd = socket(AF_UNIX, SOCK_DGRAM, 0);
-  if (sockfd == -1) {
-    throw new system_error(errno, generic_category());
-  }
+  CHECK_ERR(sockfd = socket(AF_UNIX, SOCK_DGRAM, 0));
 }
 
 void MixerCallback::close() {
-  if (sockfd != -1) {
-    if (::close(sockfd)) {
-      throw new system_error(errno, generic_category());
-    }
+  if (sockfd >= 0) {
+    return;
+  }
+  if (sockfd >= 0) {
+    DVLOG(1) << "close " << sockfd;
+    PCHECK(::close(sockfd));
     sockfd = -1;
   }
 }
 
-bool MixerCallback::opened() { return (sockfd != -1); }
+bool MixerCallback::opened() { return (sockfd >= 0); }
 
 void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
   if (sockfd == -1) {
@@ -50,9 +44,9 @@ void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
       break;
     case ECONNREFUSED:
       break;
-    default:
-      throw new system_error(errno, generic_category());
-      break;
+    default: {
+      PCHECK(errno) << ": sendto() failed: ";
+    } break;
     }
   }
 }
@@ -63,5 +57,5 @@ void MixerCallback::onMixedAudioFrame(TRTCAudioFrame *frame) {
 void MixerCallback::onError(int errcode, char *errmsg) {
   ostringstream oss;
   oss << "ITRTCMediaMixer internal error " << errcode << ": " << errmsg;
-  throw new runtime_error(oss.str());
+  LOG(FATAL) << oss.str();
 }

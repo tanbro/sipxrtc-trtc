@@ -32,9 +32,11 @@ void RoomCallback::onWarning(TXLiteAVWarning warningCode,
 void RoomCallback::onEnterRoom(uint64_t elapsed) {
   /// TODO: 进去了房间才能继续后面的操作！
   cout << "[INFO   ] onEnterRoom: elapsed=" << elapsed << endl;
+  _entered = true;
 };
 
 void RoomCallback::onExitRoom(int reason) {
+  _entered = false;
   /// TODO: 然后呢！
   cout << "[WARNING] onExitRoom: reason=" << reason << endl;
 };

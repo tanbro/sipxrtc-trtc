@@ -34,6 +34,7 @@ set (SOURCES
   ${SRC_DIR}/AudioRecvCallback.cc
   ${SRC_DIR}/MixerCallback.cc
   ${SRC_DIR}/LogCallback.cc
+  ${SRC_DIR}/UdsAudioReader.cc
 )
 
 # 加构建目标: 可执行
@@ -69,3 +70,19 @@ add_custom_command(
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
+
+# dependency of this project: gflags
+pkg_check_modules(GFLAGS REQUIRED gflags)
+target_link_libraries(${PROJECT_NAME} ${GFLAGS_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${GFLAGS_INCLUDE_DIRS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${GFLAGS_CFLAGS})
+target_link_directories(${PROJECT_NAME} PRIVATE ${GFLAGS_LIBRARY_DIRS})
+target_link_options(${PROJECT_NAME} PRIVATE ${GFLAGS_LDFLAGS})
+
+# dependency of this project: glog
+pkg_check_modules(LIBGLOG REQUIRED libglog)
+target_link_libraries(${PROJECT_NAME} ${LIBGLOG_LIBRARIES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${LIBGLOG_INCLUDE_DIRS})
+target_compile_options(${PROJECT_NAME} PRIVATE ${LIBGLOG_CFLAGS})
+target_link_directories(${PROJECT_NAME} PRIVATE ${LIBGLOG_LIBRARY_DIRS})
+target_link_options(${PROJECT_NAME} PRIVATE ${LIBGLOG_LDFLAGS})

@@ -5,6 +5,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <glog/logging.h>
+
 #include "global.hh"
 
 using namespace std;
@@ -18,10 +20,8 @@ void AudioRecvCallback::onRecvAudioFrame(const char *userId,
 
   if (mixer != nullptr) {
     lock_guard<std::mutex> lk(trtc_app_mutex);
-    if ((trtc_errno = mixer->addAudioFrame(userId, frame))) {
-      ostringstream oss;
-      oss << "ITRTCMediaMixer::addAudioFrame() error " << trtc_errno;
-      throw new runtime_error(oss.str());
-    }
+    trtc_errno = mixer->addAudioFrame(userId, frame);
   }
+  CHECK_EQ(0, trtc_errno) << ": ITRTCMediaMixer::addAudioFrame(userId=\""
+                          << userId << "\") failed.";
 }

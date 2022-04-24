@@ -5,14 +5,23 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "(gdb) 启动 sipxtrtc (Debug/Linux-x86_64-GNU)",
+            "name": "[Linux-x86_64-GNU/Debug] 启动 sipxtrtc",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/out/Linux-x86_64-GNU/Debug/bin/sipxtrtc",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/out/Linux-x86_64-GNU/Debug/bin",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "GLOG_logtostderr",
+                    "value": "1"
+                },
+                {
+                    "name": "GLOG_v",
+                    "value": "3"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "gdb",
             "setupCommands": [

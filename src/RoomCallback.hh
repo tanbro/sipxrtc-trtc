@@ -7,6 +7,9 @@
 #include "TRTCCloud.h"
 
 class RoomCallback : public ITRTCCloudCallback {
+private:
+  bool _entered = false;
+
 public:
   void onError(TXLiteAVError errCode, const char *errMsg, void *arg);
 
@@ -19,6 +22,7 @@ public:
   void onUserEnter(const char *userId);
   void onUserExit(const char *userId, int reason);
 
+  bool getEntered() { return _entered; };
 };
 
 #endif

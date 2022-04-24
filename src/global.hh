@@ -23,6 +23,5 @@ extern AudioRecvCallback audRecvCallback;
 extern LogCallback logCallback;
 extern MixerCallback mixerCallback;
 extern RoomCallback roomCallback;
-extern RecorderCallback recorderCallback;
 
 #endif
