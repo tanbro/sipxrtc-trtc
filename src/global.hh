@@ -11,7 +11,6 @@
 #include "AudioRecvCallback.hh"
 #include "LogCallback.hh"
 #include "MixerCallback.hh"
-#include "RecorderCallback.hh"
 #include "RoomCallback.hh"
 
 extern std::mutex trtc_app_mutex;

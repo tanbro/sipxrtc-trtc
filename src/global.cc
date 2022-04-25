@@ -10,4 +10,3 @@ AudioRecvCallback audRecvCallback;
 LogCallback logCallback;
 MixerCallback mixerCallback;
 RoomCallback roomCallback;
-RecorderCallback recorderCallback;
