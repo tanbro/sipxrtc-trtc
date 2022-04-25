@@ -78,10 +78,10 @@ void UdsAudioReader::close() {
 
 void UdsAudioReader::runOnce() {
   ssize_t n_bytes = recv(_fd, _buffer, _buffer_size, 0);
-  DVLOG(6) << "recv()->" << n_bytes;
+  DLOG_EVERY_N(INFO, 10) << "recv() -> " << n_bytes << " bytes";
   if (n_bytes < 0) {
     if (errno != EWOULDBLOCK) {
-      CHECK(errno) << ": recv() failed: ";
+      PCHECK(errno) << ": recv() failed: ";
     }
     return;
   }
@@ -96,10 +96,5 @@ void UdsAudioReader::runOnce() {
   af.channel = 1;
   af.timestamp = 0;
 
-  int trtc_errno;
-  {
-    lock_guard<std::mutex> lk(trtc_app_mutex);
-    trtc_errno = room->sendCustomAudioData(&af);
-  }
-  CHECK_EQ(0, trtc_errno) << ": ITRTCCloud::sendCustomAudioData() failed.";
+  CHECK_EQ(0, room->sendCustomAudioData(&af));
 }

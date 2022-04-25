@@ -24,7 +24,7 @@ void MixerCallback::close() {
   }
   if (sockfd >= 0) {
     DVLOG(1) << "close " << sockfd;
-    PCHECK(::close(sockfd));
+    PCHECK(0 == ::close(sockfd));
     sockfd = -1;
   }
 }

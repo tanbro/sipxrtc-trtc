@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
 
   pollfd fds;
   nfds_t nfds = 1;
-  fds.events = POLLIN;
+  fds.events = POLLRDNORM;
 
   DVLOG(1) << "打开 udsAudioReader";
   UdsAudioReader audReader(SUA_UDS_FILE);
@@ -108,16 +108,16 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, sig_int_handler);
   printf("ctrl-c 退出\n");
   while (!exiting) {
-    DVLOG(6) << "poll() ...";
     int rc;
-    CHECK_ERR(rc = poll(&fds, 1, 1000));
-    DVLOG(6) << "poll() returns " << rc;
-    if (rc == 0) {
-      /// Timeout
-      continue;
+    CHECK_ERR(rc = poll(&fds, 1, 5000));
+    if (rc != 0) {
+      DLOG_EVERY_N(INFO, 10) << "poll() revents: " << fds.revents;
+      if (fds.revents & POLLRDNORM) {
+        DLOG_EVERY_N(INFO, 10) << "audReader.runOnce() ... ";
+        audReader.runOnce();
+      }
     }
-    ///
-    audReader.runOnce();
+    fds.revents = 0;
   }
 
   audReader.close();
