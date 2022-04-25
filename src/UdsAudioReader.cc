@@ -6,8 +6,6 @@
 
 #include <glog/logging.h>
 
-#include "TRTCCloud.h"
-
 #include "global.hh"
 
 using namespace std;
@@ -78,7 +76,7 @@ void UdsAudioReader::close() {
 
 void UdsAudioReader::runOnce() {
   ssize_t n_bytes = recv(_fd, _buffer, _buffer_size, 0);
-  DLOG_EVERY_N(INFO, 10) << "recv() -> " << n_bytes << " bytes";
+  VLOG_IF_EVERY_N(3, n_bytes > 0, 100) << "recv() -> " << n_bytes << " bytes";
   if (n_bytes < 0) {
     if (errno != EWOULDBLOCK) {
       PCHECK(errno) << ": recv() failed: ";

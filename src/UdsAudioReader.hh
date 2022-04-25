@@ -12,6 +12,7 @@
 
 #include <string>
 
+#include <TRTCCloud.h>
 
 class UdsAudioReader {
 private:

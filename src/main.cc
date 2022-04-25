@@ -22,7 +22,7 @@
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
-#include "TRTCCloud.h"
+#include <TRTCCloud.h>
 
 #include "LogCallback.hh"
 #include "MixerCallback.hh"
@@ -40,6 +40,9 @@ static void sig_int_handler(int dummy) { exiting = true; }
 int main(int argc, char *argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
+
+  VLOG(1) << "[" << this_thread::get_id() << "]"
+          << "启动了！！！！！！！";
 
   string userid = TRTC_USER_ID;
   string usersig = TRTC_USER_SIG;
@@ -98,7 +101,7 @@ int main(int argc, char *argv[]) {
 
   pollfd fds;
   nfds_t nfds = 1;
-  fds.events = POLLRDNORM;
+  fds.events = POLLIN;
 
   DVLOG(1) << "打开 udsAudioReader";
   UdsAudioReader audReader(SUA_UDS_FILE);
@@ -111,15 +114,12 @@ int main(int argc, char *argv[]) {
     int rc;
     CHECK_ERR(rc = poll(&fds, 1, 5000));
     if (rc != 0) {
-      DLOG_EVERY_N(INFO, 10) << "poll() revents: " << fds.revents;
-      if (fds.revents & POLLRDNORM) {
-        DLOG_EVERY_N(INFO, 10) << "audReader.runOnce() ... ";
+      if (fds.revents & POLLIN) {
         audReader.runOnce();
       }
     }
     fds.revents = 0;
   }
-
   audReader.close();
 
   if (mixer != nullptr) {

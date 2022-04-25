@@ -4,7 +4,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "TRTCCloud.h"
+#include <TRTCCloud.h>
 
 class LogCallback : public ITRTCLogCallback {
 public:

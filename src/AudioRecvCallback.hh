@@ -1,7 +1,7 @@
 #ifndef __sipxtrtc_Recorder_h__
 #define __sipxtrtc_Recorder_h__ 1
 
-#include "TRTCCloud.h"
+#include <TRTCCloud.h>
 
 class AudioRecvCallback : public ITRTCAudioRecvCallback {
 public:

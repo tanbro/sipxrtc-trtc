@@ -1,9 +1,6 @@
 #include "AudioRecvCallback.hh"
 
-#include <cassert>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
+#include <thread>
 
 #include <glog/logging.h>
 
@@ -13,15 +10,18 @@ using namespace std;
 
 void AudioRecvCallback::onRecvAudioFrame(const char *userId,
                                          TRTCAudioFrame *frame) {
-  int trtc_errno;
-  // assert(frame->sampleRate == 48000);
-  // assert(frame->channel == 1);
-  // assert(frame->length == 1920);
-
+  CHECK_EQ(frame->sampleRate, 48000);
+  CHECK_EQ(frame->channel, 1);
+  CHECK_EQ(frame->length, 1920);
+  VLOG(6) << "[" << this_thread::get_id() << "]"
+          << "onRecvAudioFrame... ";
+  CHECK_NOTNULL(mixer);
   if (mixer != nullptr) {
     lock_guard<std::mutex> lk(trtc_app_mutex);
-    trtc_errno = mixer->addAudioFrame(userId, frame);
+    VLOG(6) << "[" << this_thread::get_id() << "]"
+            << "onRecvAudioFrame... >>> mixer->addAudioFrame()";
+    CHECK_EQ(0, mixer->addAudioFrame(userId, frame));
+    VLOG(6) << "[" << this_thread::get_id() << "]"
+            << "onRecvAudioFrame... <<< mixer->addAudioFrame()";
   }
-  CHECK_EQ(0, trtc_errno) << ": ITRTCMediaMixer::addAudioFrame(userId=\""
-                          << userId << "\") failed.";
 }
