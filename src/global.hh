@@ -12,15 +12,19 @@
 #include "LogCallback.hh"
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
+#include "UdsReader.hh"
+#include "UdsWriter.hh"
 
-extern std::mutex trtc_app_mutex;
+extern std::mutex app_mtx;
 extern ITRTCCloud *room;
 extern ITRTCMediaMixer *mixer;
-extern ITRTCMediaRecorder *recorder;
 
 extern AudioRecvCallback audRecvCallback;
 extern LogCallback logCallback;
 extern MixerCallback mixerCallback;
 extern RoomCallback roomCallback;
+
+extern UdsReader* udsReader;
+extern UdsWriter* udsWriter;
 
 #endif

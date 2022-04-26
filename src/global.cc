@@ -1,6 +1,6 @@
 #include "global.hh"
 
-std::mutex trtc_app_mutex;
+std::mutex app_mtx;
 
 ITRTCCloud *room = nullptr;
 ITRTCMediaMixer *mixer = nullptr;
@@ -10,3 +10,6 @@ AudioRecvCallback audRecvCallback;
 LogCallback logCallback;
 MixerCallback mixerCallback;
 RoomCallback roomCallback;
+
+UdsReader *udsReader = nullptr;
+UdsWriter *udsWriter = nullptr;

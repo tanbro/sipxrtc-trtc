@@ -17,7 +17,7 @@ void AudioRecvCallback::onRecvAudioFrame(const char *userId,
           << "onRecvAudioFrame... ";
   CHECK_NOTNULL(mixer);
   if (mixer != nullptr) {
-    lock_guard<std::mutex> lk(trtc_app_mutex);
+    lock_guard<std::mutex> lk(app_mtx);
     VLOG(6) << "[" << this_thread::get_id() << "]"
             << "onRecvAudioFrame... >>> mixer->addAudioFrame()";
     CHECK_EQ(0, mixer->addAudioFrame(userId, frame));

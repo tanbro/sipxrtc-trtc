@@ -1,20 +1,15 @@
-#include <assert.h>
-#include <errno.h>
-#include <memory.h>
-#include <signal.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
 
+#include <chrono>
 #include <condition_variable>
+#include <csignal>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <mutex>
 #include <thread>
@@ -27,13 +22,13 @@
 #include "LogCallback.hh"
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
-#include "UdsAudioReader.hh"
+
 #include "def.hh"
 #include "global.hh"
 
 using namespace std;
 
-static bool exiting = true;
+static bool exiting = false;
 
 static void sig_int_handler(int dummy) { exiting = true; }
 
@@ -59,6 +54,11 @@ int main(int argc, char *argv[]) {
   // setLogLevel(TRTCLogLevel::TRTCLogLevelWarn);
   // setLogCallback(&logCallback);
 
+  udsReader = new UdsReader(SUA_UDS_FILE);
+  udsReader->open();
+  udsWriter = new UdsWriter(RTC_UDS_FILE);
+  udsWriter->open();
+
   cout << "输入房间号:";
   getline(cin, line);
   string roomName = line.c_str();
@@ -71,14 +71,13 @@ int main(int argc, char *argv[]) {
   params.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
 
   {
-    lock_guard<mutex> lk(trtc_app_mutex);
+    lock_guard<mutex> lk(app_mtx);
 
     room = createInstance(TRTC_APP_ID);
     room->setCallback(&roomCallback);
 
     cout << "启动 mixer ..." << endl;
     mixer = createMediaMixer();
-    mixerCallback.open(RTC_UDS_FILE);
     mixer->setCallback(&mixerCallback);
     if (mixer != nullptr) {
       int errCode = mixer->start(true, false);
@@ -99,28 +98,37 @@ int main(int argc, char *argv[]) {
   }
   DVLOG(3) << "已经进入房间!";
 
-  pollfd fds;
-  nfds_t nfds = 1;
-  fds.events = POLLIN;
-
-  DVLOG(1) << "打开 udsAudioReader";
-  UdsAudioReader audReader(SUA_UDS_FILE);
-  fds.fd = audReader.open();
-
-  bool exiting = false;
   signal(SIGINT, sig_int_handler);
   printf("ctrl-c 退出\n");
+
+  DLOG(INFO) << "启动 poll ...";
+
+  pollfd fds;
+  int rc;
+  // cout << "xxx:";
+  // getline(cin, line);
   while (!exiting) {
-    int rc;
-    CHECK_ERR(rc = poll(&fds, 1, 5000));
-    if (rc != 0) {
-      if (fds.revents & POLLIN) {
-        audReader.runOnce();
-      }
+    memset(&fds, 0, sizeof(pollfd));
+    fds.fd = udsReader->getFd();
+    fds.events = POLLIN;
+    CHECK_ERR(rc = poll(&fds, 1, 1000));
+    if (!rc) { // timeout
+      this_thread::sleep_for(chrono::milliseconds(100));
+      continue;
     }
-    fds.revents = 0;
+    if (fds.revents & POLLERR) {
+      LOG(WARNING) << "POLLERR";
+    }
+    if (fds.revents & POLLHUP) {
+      LOG(WARNING) << "POLLHUP";
+    }
+    if (fds.revents & POLLNVAL) {
+      LOG(WARNING) << "POLLNVAL";
+    }
+    if (fds.revents & POLLIN) {
+      udsReader->read();
+    }
   }
-  audReader.close();
 
   if (mixer != nullptr) {
     mixer->stop();
@@ -130,4 +138,10 @@ int main(int argc, char *argv[]) {
     room->setCallback(nullptr);
     destroyInstance(room);
   }
+
+  //
+  if (udsReader)
+    delete udsReader;
+  if (udsWriter)
+    delete udsWriter;
 }

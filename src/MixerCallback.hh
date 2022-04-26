@@ -7,17 +7,7 @@
 #include "TRTCCloud.h"
 
 class MixerCallback : public ITRTCMediaMixerCallback {
-private:
-  sockaddr_un sendto_addr;
-  int sockfd = -1;
-
 public:
-  ~MixerCallback() { this->close(); };
-
-  void open(const std::string &path);
-  void close();
-  bool opened();
-
   /**
    * \brief 1.1 回调混流后的音频帧，音频格式PCM。单声道 48kHz采样率
    * 16bit深度。20ms帧长（960个采样点，字节长度1920）

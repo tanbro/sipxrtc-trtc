@@ -5,9 +5,6 @@
 
 class AudioRecvCallback : public ITRTCAudioRecvCallback {
 public:
-  AudioRecvCallback(){};
-  virtual ~AudioRecvCallback(){};
-
   /// @name 自定义音频帧接收回调
   /// @{
   /**

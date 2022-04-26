@@ -25,7 +25,7 @@ void RoomCallback::onWarning(TXLiteAVWarning warningCode,
 
 void RoomCallback::onEnterRoom(uint64_t elapsed) {
   /// TODO: 进去了房间才能继续后面的操作！
-  lock_guard<mutex> lk(trtc_app_mutex);
+  lock_guard<mutex> lk(app_mtx);
   LOG(WARNING) << "[" << this_thread::get_id() << "]"
                << " "
                << "EnterRoom elapsed=" << elapsed;
@@ -33,7 +33,7 @@ void RoomCallback::onEnterRoom(uint64_t elapsed) {
 }
 
 void RoomCallback::onExitRoom(int reason) {
-  lock_guard<mutex> lk(trtc_app_mutex);
+  lock_guard<mutex> lk(app_mtx);
   LOG(WARNING) << "[" << this_thread::get_id() << "]"
                << " "
                << "ExitRoom reason=" << reason;
@@ -42,7 +42,7 @@ void RoomCallback::onExitRoom(int reason) {
 };
 
 void RoomCallback::onUserEnter(const char *userId) {
-  lock_guard<mutex> lk(trtc_app_mutex);
+  lock_guard<mutex> lk(app_mtx);
   LOG(INFO) << "[" << this_thread::get_id() << "]"
             << " "
             << "用户 " << userId << " 进入";
@@ -59,7 +59,7 @@ void RoomCallback::onUserEnter(const char *userId) {
 }
 
 void RoomCallback::onUserExit(const char *userId, int reason) {
-  lock_guard<mutex> lk(trtc_app_mutex);
+  lock_guard<mutex> lk(app_mtx);
   LOG(INFO) << "[" << this_thread::get_id() << "]"
             << " "
             << "用户 " << userId << " 退出";

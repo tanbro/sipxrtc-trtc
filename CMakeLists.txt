@@ -34,7 +34,9 @@ set (SOURCES
   ${SRC_DIR}/AudioRecvCallback.cc
   ${SRC_DIR}/MixerCallback.cc
   ${SRC_DIR}/LogCallback.cc
-  ${SRC_DIR}/UdsAudioReader.cc
+  ${SRC_DIR}/UdsBase.cc
+  ${SRC_DIR}/UdsReader.cc
+  ${SRC_DIR}/UdsWriter.cc
 )
 
 # 加构建目标: 可执行
