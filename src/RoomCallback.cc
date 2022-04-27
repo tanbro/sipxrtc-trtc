@@ -13,9 +13,10 @@ using namespace std;
 static Region dummy_region{
     0, 0, 0, 0, 0, RegionOption::REGION_OPTION_FILLMODE_FULL, 0};
 
+/// SDK不可恢复的错误!
 void RoomCallback::onError(TXLiteAVError errCode, const char *errMsg,
                            void *arg) {
-  LOG(ERROR) << errCode << ": " << errMsg;
+  LOG(FATAL) << errCode << ": " << errMsg;
 };
 
 void RoomCallback::onWarning(TXLiteAVWarning warningCode,
@@ -39,13 +40,14 @@ void RoomCallback::onExitRoom(int reason) {
                << "ExitRoom reason=" << reason;
   _entered = false;
   /// TODO: 然后呢！
+  interrupted = true;
 };
 
 void RoomCallback::onUserEnter(const char *userId) {
   lock_guard<mutex> lk(app_mtx);
   LOG(INFO) << "[" << this_thread::get_id() << "]"
             << " "
-            << "用户 " << userId << " 进入";
+            << "UserEnter: " << userId;
   CHECK_NOTNULL(mixer);
   /// IMPORTANT: 经测试，如果不设置该用户的视频混流 Region，则 MediaMixer
   /// 无法接受音频输入数据报
@@ -62,7 +64,7 @@ void RoomCallback::onUserExit(const char *userId, int reason) {
   lock_guard<mutex> lk(app_mtx);
   LOG(INFO) << "[" << this_thread::get_id() << "]"
             << " "
-            << "用户 " << userId << " 退出";
+            << "UserExit: " << userId;
   CHECK_EQ(0, room->setRemoteAudioRecvCallback(
                   userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown,
                   nullptr));

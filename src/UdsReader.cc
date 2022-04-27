@@ -46,20 +46,21 @@ void UdsReader::close() {
 
 ssize_t UdsReader::read() {
   CHECK_LT(0, fd);
+  auto tsBegin = TClock::now();
+
   void *data = read_buffer;
   size_t length = sizeof(read_buffer);
-
-  auto tsBegin = TClock::now();
+  ssize_t n_bytes;
 
   VLOG(6) << "[" << hex << this_thread::get_id() << "] "
           << ">>> recv("
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ")";
-  ssize_t n_bytes = recv(fd, data, length, 0);
+  n_bytes = recv(fd, data, length, 0);
   if (n_bytes < 0) {
     if (errno != EWOULDBLOCK) {
-      PCHECK(errno) << ": recv() failed: ";
+      PCHECK(errno);
     }
   }
   VLOG(6) << "[" << hex << this_thread::get_id() << "] "

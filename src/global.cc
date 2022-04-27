@@ -1,5 +1,7 @@
 #include "global.hh"
 
+bool interrupted = false;
+
 std::mutex app_mtx;
 
 ITRTCCloud *room = nullptr;
@@ -7,7 +9,7 @@ ITRTCMediaMixer *mixer = nullptr;
 ITRTCMediaRecorder *recorder = nullptr;
 
 AudioRecvCallback audRecvCallback;
-LogCallback logCallback;
+SdkLogger sdkLogger;
 MixerCallback mixerCallback;
 RoomCallback roomCallback;
 

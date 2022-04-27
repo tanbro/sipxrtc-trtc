@@ -17,6 +17,20 @@ add_compile_options("$<$<CONFIG:DEBUG>:-D_DEBUG>")
 # pkg-config 是必须的!
 find_package(PkgConfig REQUIRED)
 
+execute_process (
+  COMMAND git describe
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+  OUTPUT_VARIABLE GIT_DESCRIBE_OUTPUT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+execute_process (
+  COMMAND git rev-parse --short HEAD
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+  OUTPUT_VARIABLE GIT_REV_PARSE_OUTPUT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
 # 项目：这个执行文件
 project(sipxtrtc)
 
@@ -33,14 +47,27 @@ set (SOURCES
   ${SRC_DIR}/RoomCallback.cc
   ${SRC_DIR}/AudioRecvCallback.cc
   ${SRC_DIR}/MixerCallback.cc
-  ${SRC_DIR}/LogCallback.cc
+  ${SRC_DIR}/SdkLogger.cc
   ${SRC_DIR}/UdsBase.cc
   ${SRC_DIR}/UdsReader.cc
   ${SRC_DIR}/UdsWriter.cc
+  ${SRC_DIR}/Flags.cc
+  ${SRC_DIR}/version.cc
 )
 
 # 加构建目标: 可执行
 add_executable(${PROJECT_NAME} ${SOURCES})
+
+if (GIT_DESCRIBE_OUTPUT)
+  target_compile_definitions(${PROJECT_NAME}
+    PRIVATE __GIT_DESC__="${GIT_DESCRIBE_OUTPUT}"
+  )
+endif ()
+if (GIT_REV_PARSE_OUTPUT)
+  target_compile_definitions(${PROJECT_NAME}
+  PRIVATE __GIT_REV__="${GIT_REV_PARSE_OUTPUT}"
+  )
+endif ()
 
 # include 目录
 target_include_directories(${PROJECT_NAME}

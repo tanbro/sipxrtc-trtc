@@ -9,22 +9,24 @@
 #include <TRTCCloud.h>
 
 #include "AudioRecvCallback.hh"
-#include "LogCallback.hh"
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
+#include "SdkLogger.hh"
 #include "UdsReader.hh"
 #include "UdsWriter.hh"
+
+extern bool interrupted;
 
 extern std::mutex app_mtx;
 extern ITRTCCloud *room;
 extern ITRTCMediaMixer *mixer;
 
 extern AudioRecvCallback audRecvCallback;
-extern LogCallback logCallback;
+extern SdkLogger sdkLogger;
 extern MixerCallback mixerCallback;
 extern RoomCallback roomCallback;
 
-extern UdsReader* udsReader;
-extern UdsWriter* udsWriter;
+extern UdsReader *udsReader;
+extern UdsWriter *udsWriter;
 
 #endif
