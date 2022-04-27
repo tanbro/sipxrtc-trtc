@@ -39,6 +39,7 @@ void UdsReader::close() {
   UdsBase::close();
   struct stat statbuf;
   if (!stat(addr.sun_path, &statbuf)) {
+    LOG(INFO) << "unlink " << path;
     CHECK_ERR(unlink(addr.sun_path));
   }
 }
@@ -55,36 +56,36 @@ ssize_t UdsReader::read() {
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ")";
-  ssize_t res = recv(fd, data, length, 0);
-  if (res < 0) {
+  ssize_t n_bytes = recv(fd, data, length, 0);
+  if (n_bytes < 0) {
     if (errno != EWOULDBLOCK) {
       PCHECK(errno) << ": recv() failed: ";
     }
-    return res;
   }
   VLOG(6) << "[" << hex << this_thread::get_id() << "] "
           << "<<< recv("
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ")"
-          << " -> " << dec << res;
-  ///
-  resetTrtcAudFrm();
-  trtcAudFrm.data = (uint8_t *)data;
-  trtcAudFrm.length = length;
-  CHECK_EQ(0, room->sendCustomAudioData(&trtcAudFrm));
-  //
-  TDuration elapsed = TClock::now() - tsBegin;
-  VLOG_EVERY_N(3, 100) << "read()"
-                       << " "
-                       << "elapsed = " << elapsed.count() << " usec";
-  return res;
+          << " -> " << dec << n_bytes;
+  CHECK_EQ(length, n_bytes);
+  if (n_bytes) {
+    resetAudioFrame();
+    audframe.data = (uint8_t *)data;
+    audframe.length = length;
+    CHECK_EQ(0, room->sendCustomAudioData(&audframe));
+    TDuration elapsed = TClock::now() - tsBegin;
+    VLOG_EVERY_N(3, 100) << "read()"
+                         << " "
+                         << "elapsed = " << elapsed.count() << " usec";
+  }
+  return n_bytes;
 }
 
-void UdsReader::resetTrtcAudFrm() {
-  trtcAudFrm.audioFormat = TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM;
-  trtcAudFrm.data = NULL;
-  trtcAudFrm.sampleRate = 48000;
-  trtcAudFrm.channel = 1;
-  trtcAudFrm.timestamp = 0;
+inline void UdsReader::resetAudioFrame() {
+  audframe.audioFormat = TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM;
+  audframe.data = NULL;
+  audframe.sampleRate = 48000;
+  audframe.channel = 1;
+  audframe.timestamp = 0;
 }

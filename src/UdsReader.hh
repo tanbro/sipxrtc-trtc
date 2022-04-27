@@ -24,9 +24,9 @@ protected:
   std::string path;
 
 private:
-  TRTCAudioFrame trtcAudFrm;
+  TRTCAudioFrame audframe;
   uint8_t read_buffer[1920];
-  void resetTrtcAudFrm();
+  void resetAudioFrame();
 };
 
 #endif
