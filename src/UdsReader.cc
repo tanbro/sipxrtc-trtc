@@ -23,6 +23,12 @@ UdsReader::UdsReader(const std::string &path) : path(path) {
   strncpy(addr.sun_path, path.c_str(), sizeof(addr.sun_path) - 1);
 }
 
+UdsReader::~UdsReader() {
+  if (!(fd < 0)) {
+    close();
+  }
+}
+
 int UdsReader::open() {
   UdsBase::open();
   struct stat statbuf;

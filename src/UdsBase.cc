@@ -7,7 +7,7 @@
 
 UdsBase::~UdsBase() {
   if (!(fd < 0)) {
-    ::close(fd);
+    close();
   }
 }
 

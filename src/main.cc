@@ -53,13 +53,14 @@ int main(int argc, char *argv[]) {
 
   LOG(WARNING) << endl
                << "================ startup ================" << endl
-               << "[0x" << hex << this_thread::get_id() << dec << "]"
                << " " << ossArgs.str() << endl
                << "version " << getVersionString() << endl
                << "^^^^^^^^^^^^^^^^ startup ^^^^^^^^^^^^^^^^" << endl;
 
   setLogCallback(&sdkLogger);
-  setLogLevel((TRTCLogLevel)FLAGS_sdk_log_level);
+  if (!(FLAGS_sdk_log_level < 0)) {
+    setLogLevel((TRTCLogLevel)(TRTCLogLevelNone - FLAGS_sdk_log_level));
+  }
   setConsoleEnabled(FLAGS_sdk_console);
 
   udsReader = new UdsReader(FLAGS_aud_capture_path);
@@ -67,13 +68,13 @@ int main(int argc, char *argv[]) {
   udsWriter = new UdsWriter(FLAGS_aud_playback_path);
   udsWriter->open();
 
-  TRTCParams params;
-  params.sdkAppId = FLAGS_sdk_app_id;
-  params.roomId = FLAGS_room_id;
-  params.userId = FLAGS_user_id;
-  params.userSig = FLAGS_user_sig;
+  TRTCParams roomParams;
+  roomParams.sdkAppId = FLAGS_sdk_app_id;
+  roomParams.roomId = FLAGS_room_id;
+  roomParams.userId = FLAGS_user_id;
+  roomParams.userSig = FLAGS_user_sig;
   // 主播角色，即可以发送本地音视频到远端，也可以接收远端的音视频到本地
-  params.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
+  roomParams.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
 
   {
     lock_guard<mutex> lk(app_mtx);
@@ -89,7 +90,7 @@ int main(int argc, char *argv[]) {
       CHECK_EQ(0, mixer->start(true, false));
     }
     LOG(INFO) << "enter room";
-    room->enterRoom(params, TRTCAppScene::TRTCAppSceneVideoCall);
+    room->enterRoom(roomParams, TRTCAppScene::TRTCAppSceneVideoCall);
   }
   while (!roomCallback.getEntered()) {
     this_thread::sleep_for(chrono::milliseconds(100));

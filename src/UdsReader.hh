@@ -13,6 +13,7 @@
 class UdsReader : public UdsBase {
 public:
   UdsReader(const std::string &path);
+  ~UdsReader() override;
 
   virtual ssize_t read();
 
