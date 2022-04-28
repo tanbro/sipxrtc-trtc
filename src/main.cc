@@ -1,30 +1,21 @@
 #include <sys/poll.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
 
-#include <cerrno>
-#include <chrono>
 #include <climits>
-#include <condition_variable>
 #include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
-#include <mutex>
-#include <thread>
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
 #include <TRTCCloud.h>
 
+#include "Flags.hh"
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
-
-#include "Flags.hh"
 #include "global.hh"
 #include "version.hh"
 
@@ -98,9 +89,6 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "enter room";
     room->enterRoom(roomParams, TRTCAppScene::TRTCAppSceneVideoCall);
   }
-  // while (!roomCallback.getEntered()) {
-  //   this_thread::sleep_for(chrono::milliseconds(100));
-  // }
 
   LOG(INFO) << "set signal handlers";
   for (int i = 0; i < (sizeof(hand_sigs) / sizeof(hand_sigs[0])); ++i) {
@@ -190,7 +178,6 @@ void exec_cmd(const string &cmd) {
   string s = cmd;
   while (!s.empty() && isspace(s.back()))
     s.pop_back();
-  LOG(INFO) << "STDIN input received: " << s;
   if (s == "sub") {
     // 订阅所有的远端声音
     roomCallback.suball();
@@ -205,5 +192,15 @@ void exec_cmd(const string &cmd) {
       udsReader->close();
     if (udsWriter->getFd() >= 0)
       udsWriter->close();
+  } else if (s.substr(0, 4) == "msg ") {
+    string msg = s.substr(4, s.length() - 4);
+    CHECK_GT(1000, msg.length());
+    char msgbuff[1000];
+    memset(msgbuff, 0, sizeof(msgbuff));
+    strncpy(msgbuff, msg.c_str(), sizeof(msgbuff) - 1);
+    LOG(INFO) << "sendCustomCmdMsg: " << msgbuff;
+    LOG_IF(ERROR, room->sendCustomCmdMsg(1, (const unsigned char *)msgbuff,
+                                         strlen(msgbuff), true, true))
+        << "sendCustomCmdMsg failed";
   }
 }
