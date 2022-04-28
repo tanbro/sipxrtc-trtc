@@ -20,7 +20,8 @@ void AudioRecvCallback::onRecvAudioFrame(const char *userId,
     lock_guard<std::mutex> lk(app_mtx);
     VLOG(6) << "[" << this_thread::get_id() << "]"
             << "onRecvAudioFrame... >>> mixer->addAudioFrame()";
-    CHECK_EQ(0, mixer->addAudioFrame(userId, frame));
+    int status = mixer->addAudioFrame(userId, frame);
+    LOG_IF(ERROR, status);
     VLOG(6) << "[" << this_thread::get_id() << "]"
             << "onRecvAudioFrame... <<< mixer->addAudioFrame()";
   }

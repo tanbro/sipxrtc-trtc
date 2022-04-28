@@ -1,7 +1,6 @@
-
 #include "RoomCallback.hh"
 
-#include <thread>
+#include <vector>
 
 #include <glog/logging.h>
 
@@ -27,50 +26,95 @@ void RoomCallback::onWarning(TXLiteAVWarning warningCode,
 void RoomCallback::onEnterRoom(uint64_t elapsed) {
   /// TODO: 进去了房间才能继续后面的操作！
   lock_guard<mutex> lk(app_mtx);
-  LOG(WARNING) << "[" << this_thread::get_id() << "]"
-               << " "
-               << "EnterRoom elapsed=" << elapsed;
+  LOG(WARNING) << "onEnterRoom elapsed=" << elapsed;
   _entered = true;
+  if (eventPub) {
+    eventPub->pub("onEnterRoom");
+  }
 }
 
 void RoomCallback::onExitRoom(int reason) {
   lock_guard<mutex> lk(app_mtx);
-  LOG(WARNING) << "[" << this_thread::get_id() << "]"
-               << " "
-               << "ExitRoom reason=" << reason;
+  LOG(WARNING) << "onExitRoom reason=" << reason;
   _entered = false;
-  /// TODO: 然后呢！
+  /// ATTENTION: 如果不在房间里，就直接退出程序！
   interrupted = true;
+  if (eventPub) {
+    eventPub->pub("onExitRoom");
+  }
 };
 
 void RoomCallback::onUserEnter(const char *userId) {
   lock_guard<mutex> lk(app_mtx);
-  LOG(INFO) << "[" << this_thread::get_id() << "]"
-            << " "
-            << "UserEnter: " << userId;
-  CHECK_NOTNULL(mixer);
-  /// IMPORTANT: 经测试，如果不设置该用户的视频混流 Region，则 MediaMixer
-  /// 无法接受音频输入数据报
-  if (mixer != nullptr) {
-    CHECK_EQ(0, mixer->setRegion(userId, &dummy_region));
-    CHECK_EQ(0, mixer->applyRegions());
+  LOG(INFO) << "onUserEnter: " << userId;
+  userIdSet.insert(userId);
+  if (_subFlag) {
+    subone(string(userId));
   }
-  CHECK_EQ(0, room->setRemoteAudioRecvCallback(
-                  userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM,
-                  &audRecvCallback));
+  if (eventPub) {
+    ostringstream oss;
+    oss << "onExitRoom: " << userId;
+    eventPub->pub(oss.str());
+  }
 }
 
 void RoomCallback::onUserExit(const char *userId, int reason) {
   lock_guard<mutex> lk(app_mtx);
-  LOG(INFO) << "[" << this_thread::get_id() << "]"
-            << " "
-            << "UserExit: " << userId;
-  CHECK_EQ(0, room->setRemoteAudioRecvCallback(
-                  userId, TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown,
-                  nullptr));
+  LOG(INFO) << "onUserExit: " << userId;
+  userIdSet.erase(userId);
+  unsubone(string(userId));
+
+  if (eventPub) {
+    ostringstream oss;
+    oss << "onUserExit: " << userId;
+    eventPub->pub(oss.str());
+  }
+}
+
+void RoomCallback::subone(const std::string &userId) {
+  CHECK_NOTNULL(room);
   CHECK_NOTNULL(mixer);
-  if (mixer != nullptr) {
-    CHECK_EQ(0, mixer->setRegion(userId, nullptr));
-    CHECK_EQ(0, mixer->applyRegions());
+  LOG(INFO) << "setRemoteAudioRecvCallback on user " << userId;
+  /// IMPORTANT: 经测试，如果不设置该用户的视频混流 Region，则 MediaMixer
+  /// 无法接受音频输入数据报
+  CHECK_EQ(0, mixer->setRegion(userId.c_str(), &dummy_region));
+  CHECK_EQ(0, mixer->applyRegions());
+  CHECK_EQ(0,
+           room->setRemoteAudioRecvCallback(
+               userId.c_str(), TRTCAudioFrameFormat::TRTCAudioFrameFormat_PCM,
+               &audRecvCallback));
+}
+void RoomCallback::unsubone(const std::string &userId) {
+  CHECK_NOTNULL(room);
+  CHECK_NOTNULL(mixer);
+  LOG(INFO) << "unsetRemoteAudioRecvCallback on user " << userId;
+  CHECK_EQ(0, mixer->setRegion(userId.c_str(), nullptr));
+  CHECK_EQ(0, mixer->applyRegions());
+  CHECK_EQ(0, room->setRemoteAudioRecvCallback(
+                  userId.c_str(),
+                  TRTCAudioFrameFormat::TRTCAudioFrameFormat_Unknown, nullptr));
+}
+
+void RoomCallback::suball() {
+  lock_guard<mutex> lk(app_mtx);
+  if (!_entered) {
+    LOG(ERROR) << "not entered room yet.";
+    return;
+  }
+  _subFlag = true;
+  for (auto it = userIdSet.begin(); it != userIdSet.end(); ++it) {
+    subone(*it);
+  }
+}
+
+void RoomCallback::unsuball() {
+  lock_guard<mutex> lk(app_mtx);
+  if (!_entered) {
+    LOG(ERROR) << "not entered room yet.";
+    return;
+  }
+  _subFlag = false;
+  for (auto it = userIdSet.begin(); it != userIdSet.end(); ++it) {
+    unsubone(*it);
   }
 }

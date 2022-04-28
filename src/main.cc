@@ -5,6 +5,7 @@
 
 #include <cerrno>
 #include <chrono>
+#include <climits>
 #include <condition_variable>
 #include <csignal>
 #include <cstddef>
@@ -24,7 +25,6 @@
 #include "RoomCallback.hh"
 
 #include "Flags.hh"
-#include "def.hh"
 #include "global.hh"
 #include "version.hh"
 
@@ -32,6 +32,9 @@ using namespace std;
 
 static int hand_sigs[] = {SIGINT, SIGTERM};
 static bool is_call_made = false;
+
+static void exec_cmd(const string &);
+static char cmd_buf[MAX_INPUT];
 
 static void sig_handler(int sig) {
   LOG(WARNING) << "signal: 0x" << hex << sig;
@@ -57,30 +60,33 @@ int main(int argc, char *argv[]) {
                << "version " << getVersionString() << endl
                << "^^^^^^^^^^^^^^^^ startup ^^^^^^^^^^^^^^^^" << endl;
 
+  //
+  udsReader = new UdsReader(FLAGS_aud_capture_path);
+  udsWriter = new UdsWriter(FLAGS_aud_playback_path);
+  if (!FLAGS_event_fifo.empty()) {
+    eventPub = new EventPub(FLAGS_event_fifo);
+    eventPub->open();
+  }
+
   setLogCallback(&sdkLogger);
   if (!(FLAGS_sdk_log_level < 0)) {
     setLogLevel((TRTCLogLevel)(TRTCLogLevelNone - FLAGS_sdk_log_level));
   }
   setConsoleEnabled(FLAGS_sdk_console);
 
-  udsReader = new UdsReader(FLAGS_aud_capture_path);
-  udsReader->open();
-  udsWriter = new UdsWriter(FLAGS_aud_playback_path);
-  udsWriter->open();
-
-  TRTCParams roomParams;
-  roomParams.sdkAppId = FLAGS_sdk_app_id;
-  roomParams.roomId = FLAGS_room_id;
-  roomParams.userId = FLAGS_user_id;
-  roomParams.userSig = FLAGS_user_sig;
-  // 主播角色，即可以发送本地音视频到远端，也可以接收远端的音视频到本地
-  roomParams.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
-
   {
     lock_guard<mutex> lk(app_mtx);
 
+    TRTCParams roomParams;
+    roomParams.sdkAppId = FLAGS_sdk_app_id;
+    roomParams.roomId = FLAGS_room_id;
+    roomParams.userId = FLAGS_user_id;
+    roomParams.userSig = FLAGS_user_sig;
+    // 主播角色，即可以发送本地音视频到远端，也可以接收远端的音视频到本地
+    roomParams.clientRole = TRTCClientRole::TRTCClientRole_Anchor;
+
     LOG(INFO) << "create room instance";
-    room = createInstance(TRTC_APP_ID);
+    room = createInstance(FLAGS_sdk_app_id);
     room->setCallback(&roomCallback);
 
     LOG(INFO) << "create mixer instance";
@@ -92,37 +98,67 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "enter room";
     room->enterRoom(roomParams, TRTCAppScene::TRTCAppSceneVideoCall);
   }
-  while (!roomCallback.getEntered()) {
-    this_thread::sleep_for(chrono::milliseconds(100));
-  }
+  // while (!roomCallback.getEntered()) {
+  //   this_thread::sleep_for(chrono::milliseconds(100));
+  // }
 
   LOG(INFO) << "set signal handlers";
   for (int i = 0; i < (sizeof(hand_sigs) / sizeof(hand_sigs[0])); ++i) {
     PCHECK(SIG_ERR != signal(hand_sigs[i], sig_handler));
   }
 
-  DLOG(INFO) << "start polling";
-  pollfd fds;
-  int rc;
+  DLOG(INFO) << "polling start";
+  // 一个是从 stdin 读取命令
+  // 另一个是从 UDS 读取语音流
+  pollfd fds[2];
+  memset(&fds, 0, sizeof(fds));
+  fds[0].fd = STDIN_FILENO;
+  fds[0].events = POLLIN;
+  int rc, nfds;
   while (!interrupted) {
-    memset(&fds, 0, sizeof(pollfd));
-    fds.fd = udsReader->getFd();
-    fds.events = POLLIN;
-    rc = poll(&fds, 1, 1000);
+    nfds = 1;
+    {
+      lock_guard<mutex> lk(app_mtx);
+      int fd = udsReader->getFd();
+      if (!(fd < 0)) {
+        fds[1].fd = fd;
+        fds[1].events = POLLIN;
+        ++nfds;
+      }
+    }
+    rc = poll(fds, nfds, 1000);
     if (rc > 0) {
-      if (fds.revents & POLLIN) {
-        udsReader->read();
+      for (int i = 0; i < rc; ++i) {
+        if (fds[i].fd == STDIN_FILENO) {
+          if (fds[i].revents & POLLIN) {
+            // 处理 stdin 输入的控制命令！
+            memset(cmd_buf, 0, sizeof(cmd_buf));
+            ssize_t nbytes;
+            CHECK_ERR(nbytes = read(fds[i].fd, cmd_buf, sizeof(cmd_buf) - 1));
+            CHECK_LT(nbytes, sizeof(cmd_buf));
+            exec_cmd(string(cmd_buf));
+          }
+        } else {
+          lock_guard<mutex> lk(app_mtx);
+          int fd = udsReader->getFd();
+          if ((fd == fds[i].fd) && (fds[i].revents & POLLIN)) {
+            udsReader->read();
+          }
+        }
       }
     } else if (rc < 0) {
-      // ERROR!
-      if (errno == EINTR) {
-        // 系统中断，不管
-        LOG(ERROR) << "(" << errno << "): " << strerror(errno);
-      } else {
-        PCHECK(errno);
+      switch (errno) {
+      case EINTR:
+        // 系统中断错误
+        LOG(ERROR) << "errno (" << errno << "): " << strerror(errno);
+        break;
+      default:
+        PCHECK(errno) << ": poll() failed";
+        break;
       }
     }
   }
+  DLOG(INFO) << "polling stopped";
 
   if (mixer != nullptr) {
     LOG(INFO) << "stop and destory mixer";
@@ -131,6 +167,12 @@ int main(int argc, char *argv[]) {
   }
   if (room != nullptr) {
     LOG(INFO) << "destory room";
+    {
+      lock_guard<mutex> lk(app_mtx);
+      if (roomCallback.getEntered()) {
+        room->exitRoom();
+      }
+    }
     room->setCallback(nullptr);
     destroyInstance(room);
   }
@@ -140,4 +182,28 @@ int main(int argc, char *argv[]) {
     delete udsReader;
   if (udsWriter)
     delete udsWriter;
+  if (eventPub)
+    delete eventPub;
+}
+
+void exec_cmd(const string &cmd) {
+  string s = cmd;
+  while (!s.empty() && isspace(s.back()))
+    s.pop_back();
+  LOG(INFO) << "STDIN input received: " << s;
+  if (s == "sub") {
+    // 订阅所有的远端声音
+    roomCallback.suball();
+    if (udsReader->getFd() < 0)
+      udsReader->open();
+    if (udsWriter->getFd() < 0)
+      udsWriter->open();
+  } else if (s == "unsub") {
+    // 取消订阅所有的远端声音
+    roomCallback.unsuball();
+    if (udsReader->getFd() >= 0)
+      udsReader->close();
+    if (udsWriter->getFd() >= 0)
+      udsWriter->close();
+  }
 }

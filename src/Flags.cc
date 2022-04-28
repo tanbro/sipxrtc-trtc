@@ -40,6 +40,8 @@ DEFINE_string(aud_capture_path, "",
               "从该文件拾音(Signed 16-bit PCM, Mono, 48k, 20ms)");
 DEFINE_validator(aud_capture_path, &non_empty_string);
 
+DEFINE_string(event_fifo, "", "向这个 FIFO 发送事件通知");
+
 bool non_empty_string(const char *flagname, const std::string &value) {
   return !value.empty();
 }

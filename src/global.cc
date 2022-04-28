@@ -15,3 +15,5 @@ RoomCallback roomCallback;
 
 UdsReader *udsReader = nullptr;
 UdsWriter *udsWriter = nullptr;
+
+EventPub *eventPub = nullptr;

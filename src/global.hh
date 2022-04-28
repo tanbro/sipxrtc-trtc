@@ -9,6 +9,7 @@
 #include <TRTCCloud.h>
 
 #include "AudioRecvCallback.hh"
+#include "EventPub.hh"
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
 #include "SdkLogger.hh"
@@ -26,7 +27,10 @@ extern SdkLogger sdkLogger;
 extern MixerCallback mixerCallback;
 extern RoomCallback roomCallback;
 
+
 extern UdsReader *udsReader;
 extern UdsWriter *udsWriter;
+
+extern EventPub *eventPub;
 
 #endif

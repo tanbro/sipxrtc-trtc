@@ -13,4 +13,6 @@ DECLARE_int32(sdk_log_level);
 DECLARE_string(aud_capture_path);
 DECLARE_string(aud_playback_path);
 
+DECLARE_string(event_fifo);
+
 #endif
