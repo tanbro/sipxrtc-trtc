@@ -53,6 +53,7 @@ set (SOURCES
   ${SRC_DIR}/UdsWriter.cc
   ${SRC_DIR}/EventPub.cc
   ${SRC_DIR}/Flags.cc
+  ${SRC_DIR}/utils.cc
   ${SRC_DIR}/version.cc
 )
 

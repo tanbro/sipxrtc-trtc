@@ -17,6 +17,7 @@
 #include "MixerCallback.hh"
 #include "RoomCallback.hh"
 #include "global.hh"
+#include "utils.hh"
 #include "version.hh"
 
 using namespace std;
@@ -174,33 +175,32 @@ int main(int argc, char *argv[]) {
     delete eventPub;
 }
 
+static char custmsgbuff[1000];
+
 void exec_cmd(const string &cmd) {
-  string s = cmd;
-  while (!s.empty() && isspace(s.back()))
-    s.pop_back();
-  if (s == "sub") {
+  string cmd_ = trimStr(cmd);
+  if (cmd_ == "sub") {
     // 订阅所有的远端声音
     roomCallback.suball();
     if (udsReader->getFd() < 0)
       udsReader->open();
     if (udsWriter->getFd() < 0)
       udsWriter->open();
-  } else if (s == "unsub") {
+  } else if (cmd_ == "unsub") {
     // 取消订阅所有的远端声音
     roomCallback.unsuball();
     if (udsReader->getFd() >= 0)
       udsReader->close();
     if (udsWriter->getFd() >= 0)
       udsWriter->close();
-  } else if (s.substr(0, 4) == "msg ") {
-    string msg = s.substr(4, s.length() - 4);
-    CHECK_GT(1000, msg.length());
-    char msgbuff[1000];
-    memset(msgbuff, 0, sizeof(msgbuff));
-    strncpy(msgbuff, msg.c_str(), sizeof(msgbuff) - 1);
-    LOG(INFO) << "sendCustomCmdMsg: " << msgbuff;
-    LOG_IF(ERROR, room->sendCustomCmdMsg(1, (const unsigned char *)msgbuff,
-                                         strlen(msgbuff), true, true))
+  } else if (cmd_.substr(0, 4) == "msg ") {
+    string msg = trimStr(cmd_.substr(4, cmd_.length() - 4));
+    CHECK_GT(sizeof(custmsgbuff), msg.length());
+    memset(custmsgbuff, 0, sizeof(custmsgbuff));
+    strncpy(custmsgbuff, msg.c_str(), sizeof(custmsgbuff) - 1);
+    LOG(INFO) << "sendCustomCmdMsg: " << custmsgbuff;
+    LOG_IF(ERROR, room->sendCustomCmdMsg(1, (const unsigned char *)custmsgbuff,
+                                         strlen(custmsgbuff), true, true))
         << "sendCustomCmdMsg failed";
   }
 }
