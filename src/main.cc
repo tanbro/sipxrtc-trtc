@@ -23,10 +23,10 @@
 using namespace std;
 
 static int hand_sigs[] = {SIGINT, SIGTERM};
-static bool is_call_made = false;
 
-static void exec_cmd(const string &);
 static char cmd_buf[MAX_INPUT];
+static char custmsgbuff[1000];
+static void exec_cmd(const string &);
 
 static void sig_handler(int sig) {
   LOG(WARNING) << "signal: 0x" << hex << sig;
@@ -174,8 +174,6 @@ int main(int argc, char *argv[]) {
   if (eventPub)
     delete eventPub;
 }
-
-static char custmsgbuff[1000];
 
 void exec_cmd(const string &cmd) {
   string cmd_ = trimStr(cmd);
