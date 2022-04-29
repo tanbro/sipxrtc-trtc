@@ -167,6 +167,10 @@ int main(int argc, char *argv[]) {
     delete udsWriter;
   if (eventPub)
     delete eventPub;
+
+  LOG(WARNING) << "terminated";
+
+  return EXIT_SUCCESS;
 }
 
 void exec_cmd(const string &cmd) {

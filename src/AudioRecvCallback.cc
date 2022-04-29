@@ -21,7 +21,8 @@ void AudioRecvCallback::onRecvAudioFrame(const char *userId,
     VLOG(6) << "[" << this_thread::get_id() << "]"
             << "onRecvAudioFrame... >>> mixer->addAudioFrame()";
     int status = mixer->addAudioFrame(userId, frame);
-    LOG_IF(ERROR, status);
+    LOG_IF(ERROR, status) << ": ITRTCMediaMixer::addAudioFrame() error "
+                          << status;
     VLOG(6) << "[" << this_thread::get_id() << "]"
             << "onRecvAudioFrame... <<< mixer->addAudioFrame()";
   }
