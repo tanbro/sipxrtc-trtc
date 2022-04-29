@@ -20,6 +20,8 @@ public:
   virtual int open() override;
   virtual void close() override;
 
+  const std::string& getPath();
+
 protected:
   sockaddr_un addr;
   std::string path;

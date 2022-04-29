@@ -23,6 +23,8 @@ public:
    */
   virtual ssize_t write(void *data, size_t length);
 
+  const std::string& getPath();
+
 protected:
   sockaddr_un addr;
   std::string path;

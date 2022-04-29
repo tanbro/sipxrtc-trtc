@@ -94,3 +94,5 @@ inline void UdsReader::resetAudioFrame() {
   audframe.channel = 1;
   audframe.timestamp = 0;
 }
+
+const string &UdsReader::getPath() { return path; }

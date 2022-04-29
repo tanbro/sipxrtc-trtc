@@ -174,17 +174,25 @@ void exec_cmd(const string &cmd) {
   if (cmd_ == "sub") {
     // 订阅所有的远端声音
     roomCallback.suball();
-    if (udsReader->getFd() < 0)
+    if (udsReader->getFd() < 0) {
       udsReader->open();
-    if (udsWriter->getFd() < 0)
+      LOG(INFO) << udsReader->getFd() << "<==-==" << udsReader->getPath();
+    }
+    if (udsWriter->getFd() < 0) {
       udsWriter->open();
+      LOG(INFO) << udsWriter->getFd() << "<==-==" << udsWriter->getPath();
+    }
   } else if (cmd_ == "unsub") {
     // 取消订阅所有的远端声音
     roomCallback.unsuball();
-    if (udsReader->getFd() >= 0)
+    if (udsReader->getFd() >= 0) {
+      LOG(INFO) << udsReader->getFd() << "<==|==" << udsReader->getPath();
       udsReader->close();
-    if (udsWriter->getFd() >= 0)
+    }
+    if (udsWriter->getFd() >= 0) {
+      LOG(INFO) << udsWriter->getFd() << "<==|==" << udsWriter->getPath();
       udsWriter->close();
+    }
   } else if (cmd_.substr(0, 4) == "msg ") {
     string msg = trimStr(cmd_.substr(4, cmd_.length() - 4));
     CHECK_GT(sizeof(custmsgbuff), msg.length());

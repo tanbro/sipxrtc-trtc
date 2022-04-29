@@ -55,3 +55,5 @@ ssize_t UdsWriter::write(void *data, size_t length) {
 
   return res;
 }
+
+const string &UdsWriter::getPath() { return path; }
