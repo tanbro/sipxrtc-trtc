@@ -4,8 +4,6 @@
 
 #include <chrono>
 #include <cstring>
-#include <iomanip>
-#include <thread>
 
 #include <glog/logging.h>
 
@@ -23,8 +21,7 @@ UdsWriter::UdsWriter(const std::string &path) : path(path) {
 ssize_t UdsWriter::write(void *data, size_t length) {
   CHECK_LT(0, fd);
   auto tsBegin = TClock::now();
-  VLOG(6) << "[" << hex << this_thread::get_id() << "] "
-          << ">>> sendto("
+  VLOG(6) << ">>> sendto("
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ", "
@@ -43,8 +40,7 @@ ssize_t UdsWriter::write(void *data, size_t length) {
       break;
     }
   }
-  VLOG(6) << "[" << hex << this_thread::get_id() << "] "
-          << "<<< sendto("
+  VLOG(6) << "<<< sendto("
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ", "
@@ -53,6 +49,7 @@ ssize_t UdsWriter::write(void *data, size_t length) {
           << " -> " << res;
   TDuration elapsed = TClock::now() - tsBegin;
   VLOG_EVERY_N(3, 100) << "write()"
+                       << " " << length << " bytes"
                        << " "
                        << "elapsed = " << elapsed.count() << " usec";
 

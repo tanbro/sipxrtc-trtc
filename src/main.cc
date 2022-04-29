@@ -1,3 +1,4 @@
+#include <fcntl.h>
 #include <sys/poll.h>
 
 #include <climits>
@@ -99,6 +100,7 @@ int main(int argc, char *argv[]) {
   DLOG(INFO) << "polling start";
   // 一个是从 stdin 读取命令
   // 另一个是从 UDS 读取语音流
+  CHECK_ERR(fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK));
   pollfd fds[2];
   memset(&fds, 0, sizeof(fds));
   fds[0].fd = STDIN_FILENO;
@@ -107,7 +109,6 @@ int main(int argc, char *argv[]) {
   while (!interrupted) {
     nfds = 1;
     {
-      lock_guard<mutex> lk(app_mtx);
       int fd = udsReader->getFd();
       if (!(fd < 0)) {
         fds[1].fd = fd;
@@ -117,23 +118,16 @@ int main(int argc, char *argv[]) {
     }
     rc = poll(fds, nfds, 1000);
     if (rc > 0) {
-      for (int i = 0; i < rc; ++i) {
-        if (fds[i].fd == STDIN_FILENO) {
-          if (fds[i].revents & POLLIN) {
-            // 处理 stdin 输入的控制命令！
-            memset(cmd_buf, 0, sizeof(cmd_buf));
-            ssize_t nbytes;
-            CHECK_ERR(nbytes = read(fds[i].fd, cmd_buf, sizeof(cmd_buf) - 1));
-            CHECK_LT(nbytes, sizeof(cmd_buf));
-            exec_cmd(string(cmd_buf));
-          }
-        } else {
-          lock_guard<mutex> lk(app_mtx);
-          int fd = udsReader->getFd();
-          if ((fd == fds[i].fd) && (fds[i].revents & POLLIN)) {
-            udsReader->read();
-          }
-        }
+      if (fds[0].revents & POLLIN) {
+        // 处理 stdin 输入的控制命令！
+        memset(cmd_buf, 0, sizeof(cmd_buf));
+        ssize_t nbytes;
+        CHECK_ERR(nbytes = read(fds[0].fd, cmd_buf, sizeof(cmd_buf) - 1));
+        CHECK_LT(nbytes, sizeof(cmd_buf));
+        exec_cmd(string(cmd_buf));
+      }
+      if (fds[1].revents & POLLIN) {
+        udsReader->read();
       }
     } else if (rc < 0) {
       switch (errno) {

@@ -1,5 +1,6 @@
 #include "UdsBase.hh"
 
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 
@@ -13,7 +14,7 @@ UdsBase::~UdsBase() {
 
 int UdsBase::open() {
   CHECK_GT(0, fd); // 不许重复打开
-  CHECK_ERR(fd = socket(AF_UNIX, SOCK_DGRAM, 0));
+  CHECK_ERR(fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0));
   return fd;
 }
 

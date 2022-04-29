@@ -6,7 +6,6 @@
 #include <cerrno>
 #include <chrono>
 #include <cstring>
-#include <thread>
 
 #include <glog/logging.h>
 
@@ -58,8 +57,7 @@ ssize_t UdsReader::read() {
   size_t length = sizeof(read_buffer);
   ssize_t n_bytes;
 
-  VLOG(6) << "[" << hex << this_thread::get_id() << "] "
-          << ">>> recv("
+  VLOG(6) << ">>> recv("
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ")";
@@ -69,8 +67,7 @@ ssize_t UdsReader::read() {
       PCHECK(errno);
     }
   }
-  VLOG(6) << "[" << hex << this_thread::get_id() << "] "
-          << "<<< recv("
+  VLOG(6) << "<<< recv("
           << "fd=" << hex << fd << dec << ", "
           << "data=" << data << ", "
           << "length=" << length << ")"
@@ -83,6 +80,7 @@ ssize_t UdsReader::read() {
     CHECK_EQ(0, room->sendCustomAudioData(&audframe));
     TDuration elapsed = TClock::now() - tsBegin;
     VLOG_EVERY_N(3, 100) << "read()"
+                         << " " << n_bytes << " bytes"
                          << " "
                          << "elapsed = " << elapsed.count() << " usec";
   }
