@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
       switch (errno) {
       case EINTR:
         // 系统中断错误
-        LOG(ERROR) << "errno (" << errno << "): " << strerror(errno);
+        LOG(ERROR) << strerror(errno) << " [" << errno << "]";
         break;
       default:
         PCHECK(errno) << ": poll() failed";
