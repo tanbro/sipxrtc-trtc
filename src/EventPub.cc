@@ -8,6 +8,8 @@
 
 #include <glog/logging.h>
 
+#include "utils.hh"
+
 using namespace std;
 
 EventPub::EventPub(const string &path) { _path = path; }
@@ -36,10 +38,7 @@ int EventPub::getFd() { return _fd; }
 
 void EventPub::pub(const string &msg) {
   CHECK_LE(0, _fd);
-  string s = msg;
-  while (!s.empty() && isspace(s.back()))
-    s.pop_back();
-  s += "\n";
+  string s = trimStr(msg) + "\n";
   CHECK_GT(PIPE_BUF, msg.length());
   char *buf = (char *)calloc(msg.length() + 1, sizeof(char));
   strncpy(buf, msg.c_str(), msg.length());
