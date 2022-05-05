@@ -53,7 +53,7 @@ void RoomCallback::onUserEnter(const char *userId) {
   }
   if (eventPub) {
     ostringstream oss;
-    oss << "onExitRoom: " << userId;
+    oss << "onUserEnter: " << userId;
     eventPub->pub(oss.str());
   }
 }
