@@ -180,21 +180,21 @@ void exec_cmd(const string &cmd) {
     roomCallback.suball();
     if (udsReader->getFd() < 0) {
       udsReader->open();
-      LOG(INFO) << udsReader->getFd() << "<==-==" << udsReader->getPath();
+      LOG(INFO) << udsReader->getFd() << "<==+==" << udsReader->getPath();
     }
     if (udsWriter->getFd() < 0) {
       udsWriter->open();
-      LOG(INFO) << udsWriter->getFd() << "<==-==" << udsWriter->getPath();
+      LOG(INFO) << udsWriter->getFd() << "==+==>" << udsWriter->getPath();
     }
   } else if (cmd_ == "unsub") {
     // 取消订阅所有的远端声音
     roomCallback.unsuball();
     if (udsReader->getFd() >= 0) {
-      LOG(INFO) << udsReader->getFd() << "<==|==" << udsReader->getPath();
+      LOG(INFO) << udsReader->getFd() << "<==x==" << udsReader->getPath();
       udsReader->close();
     }
     if (udsWriter->getFd() >= 0) {
-      LOG(INFO) << udsWriter->getFd() << "<==|==" << udsWriter->getPath();
+      LOG(INFO) << udsWriter->getFd() << "==x==>" << udsWriter->getPath();
       udsWriter->close();
     }
   } else if (cmd_.substr(0, 4) == "msg ") {
