@@ -23,7 +23,7 @@
 
 using namespace std;
 
-static int hand_sigs[] = {SIGINT, SIGTERM};
+static int hand_sigs[] = {SIGTERM, SIGINT, SIGQUIT, SIGHUP};
 
 static char cmd_buf[MAX_INPUT];
 static char custmsgbuff[1000];
