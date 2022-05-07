@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     LOG(INFO) << "create mixer instance";
     mixer = createMediaMixer();
     mixer->setCallback(&mixerCallback);
-    if (mixer != nullptr) {
+    if (mixer) {
       CHECK_EQ(0, mixer->start(true, false));
     }
     LOG(INFO) << "enter room";
@@ -197,13 +197,13 @@ void exec_cmd(const string &cmd) {
       LOG(INFO) << udsWriter->getFd() << "==x==>" << udsWriter->getPath();
       udsWriter->close();
     }
-  } else if (cmd_.substr(0, 4) == "msg ") {
+  } else if (cmd_.substr(0, 4) == "msg:") {
     string msg = trimStr(cmd_.substr(4, cmd_.length() - 4));
     CHECK_GT(sizeof(custmsgbuff), msg.length());
     memset(custmsgbuff, 0, sizeof(custmsgbuff));
     strncpy(custmsgbuff, msg.c_str(), sizeof(custmsgbuff) - 1);
     LOG(INFO) << "sendCustomCmdMsg: " << custmsgbuff;
-    LOG_IF(ERROR, room->sendCustomCmdMsg(1, (const unsigned char *)custmsgbuff,
+    LOG_IF(ERROR, room->sendCustomCmdMsg(7, (const unsigned char *)custmsgbuff,
                                          strlen(custmsgbuff), true, true))
         << "sendCustomCmdMsg failed";
   }
