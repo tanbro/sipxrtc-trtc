@@ -173,38 +173,48 @@ int main(int argc, char *argv[]) {
   return EXIT_SUCCESS;
 }
 
-void exec_cmd(const string &cmd) {
-  string cmd_ = trimStr(cmd);
-  if (cmd_ == "sub") {
-    // 订阅所有的远端声音
-    roomCallback.suball();
-    if (udsReader->getFd() < 0) {
-      udsReader->open();
-      LOG(INFO) << udsReader->getFd() << "<==+==" << udsReader->getPath();
+void exec_cmd(const string &content) {
+  string content_ = trimStr(content);
+  if (content_.empty())
+    return;
+  stringstream ss(content_);
+  string cmd;
+  while (getline(ss, cmd, '\n')) {
+    if (cmd.empty())
+      continue;
+    LOG(INFO) << "exec_cmd: " << cmd;
+    if (cmd == "sub") {
+      // 订阅所有的远端声音
+      roomCallback.suball();
+      if (udsReader->getFd() < 0) {
+        udsReader->open();
+        LOG(INFO) << udsReader->getFd() << "<==+==" << udsReader->getPath();
+      }
+      if (udsWriter->getFd() < 0) {
+        udsWriter->open();
+        LOG(INFO) << udsWriter->getFd() << "==+==>" << udsWriter->getPath();
+      }
+    } else if (cmd == "unsub") {
+      // 取消订阅所有的远端声音
+      roomCallback.unsuball();
+      if (udsReader->getFd() >= 0) {
+        LOG(INFO) << udsReader->getFd() << "<==x==" << udsReader->getPath();
+        udsReader->close();
+      }
+      if (udsWriter->getFd() >= 0) {
+        LOG(INFO) << udsWriter->getFd() << "==x==>" << udsWriter->getPath();
+        udsWriter->close();
+      }
+    } else if (cmd.substr(0, 4) == "msg:") {
+      string msg = trimStr(cmd.substr(4, cmd.length() - 4));
+      CHECK_GT(sizeof(custmsgbuff), msg.length());
+      memset(custmsgbuff, 0, sizeof(custmsgbuff));
+      strncpy(custmsgbuff, msg.c_str(), sizeof(custmsgbuff) - 1);
+      LOG(INFO) << "sendCustomCmdMsg: " << custmsgbuff;
+      LOG_IF(ERROR,
+             room->sendCustomCmdMsg(7, (const unsigned char *)custmsgbuff,
+                                    strlen(custmsgbuff), true, true))
+          << "sendCustomCmdMsg failed";
     }
-    if (udsWriter->getFd() < 0) {
-      udsWriter->open();
-      LOG(INFO) << udsWriter->getFd() << "==+==>" << udsWriter->getPath();
-    }
-  } else if (cmd_ == "unsub") {
-    // 取消订阅所有的远端声音
-    roomCallback.unsuball();
-    if (udsReader->getFd() >= 0) {
-      LOG(INFO) << udsReader->getFd() << "<==x==" << udsReader->getPath();
-      udsReader->close();
-    }
-    if (udsWriter->getFd() >= 0) {
-      LOG(INFO) << udsWriter->getFd() << "==x==>" << udsWriter->getPath();
-      udsWriter->close();
-    }
-  } else if (cmd_.substr(0, 4) == "msg:") {
-    string msg = trimStr(cmd_.substr(4, cmd_.length() - 4));
-    CHECK_GT(sizeof(custmsgbuff), msg.length());
-    memset(custmsgbuff, 0, sizeof(custmsgbuff));
-    strncpy(custmsgbuff, msg.c_str(), sizeof(custmsgbuff) - 1);
-    LOG(INFO) << "sendCustomCmdMsg: " << custmsgbuff;
-    LOG_IF(ERROR, room->sendCustomCmdMsg(7, (const unsigned char *)custmsgbuff,
-                                         strlen(custmsgbuff), true, true))
-        << "sendCustomCmdMsg failed";
   }
 }
