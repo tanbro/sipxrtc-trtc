@@ -15,4 +15,6 @@ DECLARE_string(aud_playback_path);
 
 DECLARE_string(event_fifo);
 
+DECLARE_uint32(max_alive);
+
 #endif

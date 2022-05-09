@@ -42,6 +42,8 @@ DEFINE_validator(aud_capture_path, &non_empty_string);
 
 DEFINE_string(event_fifo, "", "向这个 FIFO 发送事件通知");
 
+DEFINE_uint32(max_alive, 1800, "该程序的最大允许生存时长(秒)");
+
 bool non_empty_string(const char *flagname, const std::string &value) {
   return !value.empty();
 }

@@ -106,7 +106,8 @@ int main(int argc, char *argv[]) {
   fds[0].fd = STDIN_FILENO;
   fds[0].events = POLLIN;
   int rc, nfds;
-  while (!interrupted) {
+  int begin = time(NULL);
+  while (!interrupted && (time(NULL) - begin < FLAGS_max_alive)) {
     nfds = 1;
     {
       int fd = udsReader->getFd();
