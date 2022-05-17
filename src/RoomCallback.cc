@@ -26,21 +26,25 @@ void RoomCallback::onWarning(TXLiteAVWarning warningCode,
 void RoomCallback::onEnterRoom(uint64_t elapsed) {
   /// TODO: 进去了房间才能继续后面的操作！
   lock_guard<mutex> lk(app_mtx);
-  LOG(WARNING) << "onEnterRoom elapsed=" << elapsed;
+  LOG(WARNING) << "onEnterRoom: elapsed=" << elapsed;
   _entered = true;
   if (eventPub) {
-    eventPub->pub("onEnterRoom");
+    ostringstream oss;
+    oss << "onEnterRoom: " << elapsed;
+    eventPub->pub(oss.str());
   }
 }
 
 void RoomCallback::onExitRoom(int reason) {
   lock_guard<mutex> lk(app_mtx);
-  LOG(WARNING) << "onExitRoom reason=" << reason;
+  LOG(WARNING) << "onExitRoom: reason=" << reason;
   _entered = false;
   /// ATTENTION: 如果不在房间里，就直接退出程序！
   interrupted = true;
   if (eventPub) {
-    eventPub->pub("onExitRoom");
+    ostringstream oss;
+    oss << "onExitRoom: " << reason;
+    eventPub->pub(oss.str());
   }
 };
 
@@ -53,7 +57,7 @@ void RoomCallback::onUserEnter(const char *userId) {
   }
   if (eventPub) {
     ostringstream oss;
-    oss << "onExitRoom: " << userId;
+    oss << "onUserEnter: " << userId;
     eventPub->pub(oss.str());
   }
 }
