@@ -17,6 +17,22 @@ add_compile_options("$<$<CONFIG:DEBUG>:-D_DEBUG>")
 # pkg-config 是必须的!
 find_package(PkgConfig REQUIRED)
 
+option(
+  CMAKE_FIND_GFLAGS
+  "Whether to find gflags with cmake. If not, try to find it with pkg-config"
+  OFF
+)
+set(
+  CMAKE_FIND_GFLAGS_TARGET "" CACHE STRING
+  "To request a particular imported gflags library target to link against. Only availvable when `CMAKE_FIND_GFLAGS` is ON."
+)
+
+option(
+  CMAKE_FIND_GLOG
+  "Whether to find glog with cmake. If not, try to find it with pkg-config"
+  OFF
+)
+
 execute_process (
   COMMAND git describe
   WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
@@ -88,7 +104,17 @@ set_target_properties(${PROJECT_NAME}
 )
 
 # TRTC SDK
-set(TRTC_SDK_DIR ${CMAKE_CURRENT_LIST_DIR}/SDKs/trtc_7.9.54)
+if (TRTC_SDK_DIR)
+  message("TRTC_SDK_DIR was set explicitly: \"${TRTC_SDK_DIR}\"")
+else ()
+  if (DEFINED ENV{TRTC_SDK_DIR})
+    set(TRTC_SDK_DIR $ENV{TRTC_SDK_DIR})
+    message("TRTC_SDK_DIR was set from environment: \"${TRTC_SDK_DIR}\"")
+  else ()
+  set(TRTC_SDK_DIR ${CMAKE_CURRENT_LIST_DIR}/SDKs/trtc_7.9.54)
+    message("Use default TRTC_SDK_DIR: \"${TRTC_SDK_DIR}\"")
+  endif ()
+endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${TRTC_SDK_DIR}/include)
 target_link_directories(${PROJECT_NAME} PRIVATE ${TRTC_SDK_DIR}/lib)
 target_link_libraries(${PROJECT_NAME} TRTCEngine)
@@ -102,18 +128,33 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
 
+
 # dependency of this project: gflags
-pkg_check_modules(GFLAGS REQUIRED gflags)
-target_link_libraries(${PROJECT_NAME} ${GFLAGS_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${GFLAGS_INCLUDE_DIRS})
-target_compile_options(${PROJECT_NAME} PRIVATE ${GFLAGS_CFLAGS})
-target_link_directories(${PROJECT_NAME} PRIVATE ${GFLAGS_LIBRARY_DIRS})
-target_link_options(${PROJECT_NAME} PRIVATE ${GFLAGS_LDFLAGS})
+if (${CMAKE_FIND_GFLAGS})
+  if ("${CMAKE_FIND_GFLAGS_TARGET}" STREQUAL "")
+    find_package(gflags REQUIRED)
+  else ()
+    find_package(gflags REQUIRED COMPONENTS "${CMAKE_FIND_GFLAGS_TARGET}")
+  endif()
+  target_link_libraries(${PROJECT_NAME} gflags)
+else ()
+  pkg_check_modules(GFLAGS REQUIRED gflags)
+  target_link_libraries(${PROJECT_NAME} ${GFLAGS_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${GFLAGS_INCLUDE_DIRS})
+  target_compile_options(${PROJECT_NAME} PRIVATE ${GFLAGS_CFLAGS})
+  target_link_directories(${PROJECT_NAME} PRIVATE ${GFLAGS_LIBRARY_DIRS})
+  target_link_options(${PROJECT_NAME} PRIVATE ${GFLAGS_LDFLAGS})
+endif()
 
 # dependency of this project: glog
-pkg_check_modules(LIBGLOG REQUIRED libglog)
-target_link_libraries(${PROJECT_NAME} ${LIBGLOG_LIBRARIES})
-target_include_directories(${PROJECT_NAME} PRIVATE ${LIBGLOG_INCLUDE_DIRS})
-target_compile_options(${PROJECT_NAME} PRIVATE ${LIBGLOG_CFLAGS})
-target_link_directories(${PROJECT_NAME} PRIVATE ${LIBGLOG_LIBRARY_DIRS})
-target_link_options(${PROJECT_NAME} PRIVATE ${LIBGLOG_LDFLAGS})
+if (${CMAKE_FIND_GLOG})
+  find_package (glog REQUIRED)
+  target_link_libraries (${PROJECT_NAME} glog::glog)
+else ()
+  pkg_check_modules(LIBGLOG REQUIRED libglog)
+  target_link_libraries(${PROJECT_NAME} ${LIBGLOG_LIBRARIES})
+  target_include_directories(${PROJECT_NAME} PRIVATE ${LIBGLOG_INCLUDE_DIRS})
+  target_compile_options(${PROJECT_NAME} PRIVATE ${LIBGLOG_CFLAGS})
+  target_link_directories(${PROJECT_NAME} PRIVATE ${LIBGLOG_LIBRARY_DIRS})
+  target_link_options(${PROJECT_NAME} PRIVATE ${LIBGLOG_LDFLAGS})
+endif()
