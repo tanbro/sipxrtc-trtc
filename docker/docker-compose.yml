@@ -15,13 +15,13 @@ services:
         export OUTDIR="/root/project/out/centos7-$$(uname -m)"
         mkdir -p $${OUTDIR}
         echo "OUTDIR: $${OUTDIR}"
-        export PJDIR=$$(cat /root/deps/PJDIR | xargs | awk '{ print $$1 }')
-        echo "PJDIR: $${PJDIR}"
+        export TRTC_SDK_DIR="/root/project/SDKs/trtc_7.9.54"
+        echo "TRTC_SDK_DIR: $${TRTC_SDK_DIR}"
         (
           TMP_DIR="$$(mktemp -d)"
           trap 'rm -fr "$${TMP_DIR}"' EXIT
           cd $${TMP_DIR}
-          cmake -DCMAKE_BUILD_TYPE=Release -DOUTDIR=$${OUTDIR} -DPJDIR=$${PJDIR} -DBCG729=cmake-static -DCMAKE_FIND_GFLAGS=ON -DCMAKE_FIND_GLOG=ON /root/project
+          cmake -DCMAKE_BUILD_TYPE=Release -DOUTDIR=$${OUTDIR} -DCMAKE_FIND_GFLAGS=ON -DCMAKE_FIND_GLOG=ON /root/project
           cmake --build .
         )
         export OUTLIB=$${OUTDIR}/lib

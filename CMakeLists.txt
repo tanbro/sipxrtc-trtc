@@ -95,7 +95,13 @@ target_include_directories(${PROJECT_NAME}
 )
 
 # output dir, name, rpath, ...
-set( OUTDIR ${CMAKE_CURRENT_LIST_DIR}/out/${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_CXX_COMPILER_ID}/${CMAKE_BUILD_TYPE} )
+# output dir, name, rpath, ...
+if (OUTDIR)
+  message("OUTDIR was set explicitly: \"${OUTDIR}\"")
+else ()
+  set(OUTDIR ${CMAKE_CURRENT_LIST_DIR}/out/${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}-${CMAKE_CXX_COMPILER_ID}/${CMAKE_BUILD_TYPE})
+  message("Use default OUTDIR: \"${OUTDIR}\"")
+endif ()
 set_target_properties(${PROJECT_NAME}
     PROPERTIES
     BUILD_RPATH ../lib
