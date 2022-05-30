@@ -15,7 +15,17 @@ static Region dummy_region{
 /// SDK不可恢复的错误!
 void RoomCallback::onError(TXLiteAVError errCode, const char *errMsg,
                            void *arg) {
-  LOG(FATAL) << errCode << ": " << errMsg;
+  switch (errCode) {
+  case ERR_KICKOUT_BY_SERVER:
+    LOG(ERROR) << errCode << ": " << errMsg;
+    /// ATTENTION: 被踢，就直接退出程序！
+    interrupted = true;
+    break;
+
+  default:
+    LOG(FATAL) << errCode << ": " << errMsg;
+    break;
+  }
 };
 
 void RoomCallback::onWarning(TXLiteAVWarning warningCode,
