@@ -765,3 +765,7 @@ fabric.properties
 [Tt][Ee][Mm][Pp]/
 /[sS][dD][dK]/
 /[sS][dD][dK][sS]/
+
+# dotenv environment variables file
+.env
+.env.*
