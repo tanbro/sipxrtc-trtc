@@ -145,12 +145,12 @@ int main(int argc, char *argv[]) {
   DLOG(INFO) << "polling stopped";
 
   if (mixer != nullptr) {
-    LOG(INFO) << "stop and destory mixer";
+    LOG(INFO) << "stop and destroy mixer";
     mixer->stop();
     destroyMediaMixer(mixer);
   }
   if (room != nullptr) {
-    LOG(INFO) << "destory room";
+    LOG(INFO) << "destroy room";
     {
       lock_guard<mutex> lk(app_mtx);
       if (roomCallback.getEntered()) {
